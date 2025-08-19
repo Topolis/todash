@@ -1,0 +1,20 @@
+{
+  "name": "todash-server",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "build": "echo 'No build step for server'"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "js-yaml": "^4.1.0",
+    "node-fetch": "^3.3.2",
+    "rss-parser": "^3.13.0",
+    "systeminformation": "^5.23.7"
+  }
+}

@@ -1,0 +1,137 @@
+title: Sample Dashboard
+settings:
+  dateFormat: 'YYYY-MM-DD HH:mm'
+
+grid:
+  columns: 12
+  gap: 3
+
+widgets:
+
+  - type: project-status
+    title: Project
+    x: 1
+    y: 1
+    w: 3
+    h: 2
+
+  - type: weather
+    title: Weather (Berlin)
+    x: 4
+    y: 1
+    w: 3
+    h: 2
+    props:
+      latitude: 52.52
+      longitude: 13.405
+
+
+  - type: weather-forecast
+    title: Forecast (Berlin)
+    x: 4
+    y: 3
+    w: 3
+    h: 2
+    props:
+      latitude: 52.52
+      longitude: 13.405
+
+  - type: rss-feed
+    title: Science & Tech News
+    x: 7
+    y: 1
+    w: 6
+    h: 4
+    props:
+      urls:
+        - https://techcrunch.com/feed/
+        - https://www.wired.com/feed/rss
+        - https://www.cnet.com/rss/news/
+        - https://feeds.arstechnica.com/arstechnica/technology-lab
+      limit: 12
+
+  - type: system-stats
+    title: System
+    x: 1
+    y: 3
+    w: 3
+    h: 2
+    props:
+      refreshSeconds: 5
+
+  - type: transit-incidents
+    title: MVG/MVV Störungen
+    x: 7
+    y: 5
+    w: 6
+    h: 3
+    props:
+      mvgApiUrl: https://www.mvg.de/api/bgw-pt/v3/messages
+      favorites:
+        - U6
+        - S8
+        - 231
+      limit: 20
+
+  # ICS calendar reads public .ics URLs (no OAuth needed). Add your URLs below.
+  - type: calendar-ics
+    title: Calendar
+    x: 1
+    y: 5
+    w: 6
+    h: 3
+    props:
+      sources:
+        - url: https://www.feiertage-deutschland.de/kalender-download/ics/feiertage-deutschland.ics
+          label: Holidays
+          color: "#1976d2"
+        - url: http://i.cal.to/ical/748/allianzarena-munich/matchplan/de985e6d.97de2e71-6e0c5bb5.ics
+          label: Allianz Arena
+          color: "#382ef2"
+      lookAheadDays: 120
+      limit: 20
+
+  # Open‑Meteo Air Quality (free)
+  - type: aqi
+    title: Air Quality (Berlin)
+    x: 7
+    y: 8
+    w: 6
+    h: 2
+    props:
+      latitude: 52.52
+      longitude: 13.405      
+
+  # YouTube subscriptions requires OAuth2 credentials loaded securely.
+  # 1) Install deps: npm --workspace server install googleapis
+  # 2) Create OAuth client in Google Cloud Console; enable YouTube Data API v3
+  # 3) Obtain a refresh token with scopes e.g. https://www.googleapis.com/auth/youtube.readonly
+  # 4) Store in secrets file (gitignored) and point the server to it:
+  #    SECRETS_FILE=./secrets.json with keys: YT_CLIENT_ID, YT_CLIENT_SECRET, YT_REFRESH_TOKEN
+  #    Do not commit this file. Restart the server after setting SECRETS_FILE.
+  # - type: youtube-subscriptions
+
+
+  #   title: YouTube – Latest from Subscriptions
+  #   x: 1
+  #   y: 5
+  #   w: 6
+  #   h: 3
+  #   props:
+  #     limit: 12
+
+  # Email (IMAP) requires credentials loaded securely; prefer a secrets file (Option B).
+  # 1) Install deps: npm --workspace server install imapflow mailparser
+  # 2) Create a secrets file (gitignored), e.g. ./secrets.json, and set SECRETS_FILE=./secrets.json
+  # 3) Provide IMAP credentials there: IMAP_HOST, IMAP_PORT, IMAP_SECURE, IMAP_USER, IMAP_PASSWORD, IMAP_MAILBOX
+  # 4) Restart the server. You can override mailbox and limit via widget props below.
+
+  # - type: email
+  #   title: Inbox (Unread)
+  #   x: 7
+  #   y: 8
+  #   w: 6
+  #   h: 3
+  #   props:
+  #     limit: 20
+  #     mailbox: INBOX
