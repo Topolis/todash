@@ -56,14 +56,16 @@ export default function ForecastWidget({ latitude, longitude }) {
   if (!daily) return <Typography>No forecast</Typography>;
 
   return (
-    <Stack spacing={1} sx={{ overflow: 'auto' }}>
+    <Stack spacing={0.5} sx={{ overflow: 'auto' }}>
       <Typography variant="subtitle2">7-day forecast</Typography>
-      <Stack direction="row" spacing={1} sx={{ overflowX: 'auto' }}>
+      <Stack direction="row" spacing={0.75} sx={{ overflowX: 'auto' }}>
         {days.map((d) => (
-          <Box key={d.date} sx={{ p: 1, minWidth: 120, bgcolor: 'rgba(255,255,255,0.04)', borderRadius: 1 }}>
-            <Typography variant="caption">{new Date(d.date).toLocaleDateString()}</Typography>
-            <Typography variant="h5" component="div">{wmoToEmoji(d.code)} {Math.round(d.tmax)}°/{Math.round(d.tmin)}°</Typography>
-            {typeof d.pop === 'number' && <Chip size="small" label={`POP ${d.pop}%`} />}
+          <Box key={d.date} sx={{ p: 0.75, minWidth: 96, bgcolor: 'rgba(255,255,255,0.04)', borderRadius: 1 }}>
+            <Typography variant="caption">{new Date(d.date).toLocaleDateString(undefined, { weekday: 'short' })}</Typography>
+            <Typography variant="body2" component="div">{wmoToEmoji(d.code)} {Math.round(d.tmax)}° / {Math.round(d.tmin)}°</Typography>
+            {typeof d.pop === 'number' && (
+              <Typography variant="body2" component="div">🌧️{`${Math.round(d.pop)}%`}</Typography>
+            )}
           </Box>
         ))}
       </Stack>

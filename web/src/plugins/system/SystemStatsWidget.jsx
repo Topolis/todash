@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Stack, Typography, LinearProgress, Alert } from '@mui/material';
 import { retryingJson } from '../../lib/retryFetch.js';
 
-// props: { refreshSeconds?: number }
-export default function SystemStatsWidget({ refreshSeconds = 5 }) {
+// props: { refreshSeconds?: number, refreshSignal?: number }
+export default function SystemStatsWidget({ refreshSeconds = 5, refreshSignal }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
 
@@ -18,7 +18,7 @@ export default function SystemStatsWidget({ refreshSeconds = 5 }) {
     const seconds = Math.max(1, Number(refreshSeconds) || 5);
     const id = setInterval(load, seconds * 1000);
     return () => { active = false; clearInterval(id); };
-  }, [refreshSeconds]);
+  }, [refreshSeconds, refreshSignal]);
 
   if (error) return <Alert severity="error">{error}</Alert>;
   if (!data) return <Typography>Loading…</Typography>;

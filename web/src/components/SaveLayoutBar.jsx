@@ -10,8 +10,12 @@ export default function SaveLayoutBar({ name, widgets }) {
   async function save() {
     setError(null);
     try {
-      const res = await fetch('/api/layout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, widgets }) });
-      const json = await res.json();
+      const isDev = window.location.port === '5173';
+      const apiBase = isDev ? 'http://localhost:4000' : '';
+      const res = await fetch(`${apiBase}/api/layout`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, widgets }) });
+      const text = await res.text();
+      let json;
+      try { json = JSON.parse(text); } catch { throw new Error(text.slice(0, 200) || 'Invalid JSON response'); }
       if (!res.ok) throw new Error(json.error || 'Failed to save');
       setOpen(true);
       // Switch URL to the new layout

@@ -38,6 +38,30 @@ export default function App() {
 
   const gridSpec = useMemo(() => dashboard?.grid || { columns: 12, gap: 12, rowHeight: 120 }, [dashboard]);
 
+  async function persistLayout(newLayout) {
+    try {
+      const isDev = window.location.port === '5173';
+      const apiBase = isDev ? 'http://localhost:4000' : '';
+      const res = await fetch(`${apiBase}/api/layout`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, widgets: newLayout }) });
+      const text = await res.text();
+      let json;
+      try { json = JSON.parse(text); } catch { throw new Error(text.slice(0, 200) || 'Invalid JSON response'); }
+      if (!res.ok) {
+        console.warn('Persist layout failed:', json?.error || text);
+      } else if (json?.newName && json.newName !== name) {
+        // Only auto-switch when coming from 'sample' to 'sample.local'; otherwise stay on the chosen file
+        if (name === 'sample' && json.newName === 'sample.local') {
+          setName(json.newName);
+          const qs = new URLSearchParams(window.location.search);
+          qs.set('dashboard', json.newName);
+          window.history.replaceState(null, '', `?${qs.toString()}`);
+        }
+      }
+    } catch (e) {
+      console.warn('Persist layout failed:', e);
+    }
+  }
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -84,11 +108,36 @@ export default function App() {
         {dashboard && layout && (
           <DashboardSettingsContext.Provider value={dashboard.settings || {}}>
             <DashboardGrid columns={gridSpec.columns} gap={gridSpec.gap} rowHeight={gridSpec.rowHeight}>
-              {layout.map((w, idx) => (
-                <WidgetRenderer key={idx} widget={w} editMode={edit} onChange={(nw) => {
-                  setLayout(prev => prev.map((it, i) => i === idx ? nw : it));
-                }} />
-              ))}
+              {layout.map((w, idx) => {
+                const persistWidgetProps = (updater) => {
+                  setLayout(prev => {
+                    const newLayout = prev.map((it, i) => {
+                      if (i !== idx) return it;
+                      const oldProps = it.props || {};
+                      const nextProps = typeof updater === 'function' ? updater(oldProps) : { ...oldProps, ...updater };
+                      return { ...it, props: nextProps };
+                    });
+                    persistLayout(newLayout);
+                    return newLayout;
+                  });
+                };
+                return (
+                  <WidgetRenderer
+                    key={idx}
+                    widget={w}
+                    editMode={edit}
+                    onChange={(nw) => setLayout(prev => prev.map((it, i) => i === idx ? nw : it))}
+                    onDragEnd={(nw) => {
+                      setLayout(prev => {
+                        const newLayout = prev.map((it, i) => i === idx ? nw : it);
+                        persistLayout(newLayout);
+                        return newLayout;
+                      });
+                    }}
+                    onChangePropsPersist={persistWidgetProps}
+                  />
+                );
+              })}
             </DashboardGrid>
             {edit && <SaveLayoutBar name={name} widgets={layout} />}
           </DashboardSettingsContext.Provider>
