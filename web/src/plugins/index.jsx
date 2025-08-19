@@ -1,5 +1,9 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import Box from '@mui/material/Box';
+import { Tooltip, IconButton } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import LockIcon from '@mui/icons-material/Lock';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 import DashboardCard from '../components/DashboardCard.jsx';
 
 import RSSWidget from './rss/RSSWidget.jsx';
@@ -12,6 +16,8 @@ import EmailWidget from './email/EmailWidget.jsx';
 import YouTubeWidget from './youtube/YouTubeWidget.jsx';
 import CalendarICSWidget from './calendar/CalendarICSWidget.jsx';
 import AQIWidget from './aqi/AQIWidget.jsx';
+import LinksWidget from './links/LinksWidget.jsx';
+import StatusWidget from './status/StatusWidget.jsx';
 import { useGrid } from '../components/GridContext.jsx';
 
 export const DashboardSettingsContext = createContext({});
@@ -28,13 +34,17 @@ export const widgetRegistry = {
   'youtube-subscriptions': YouTubeWidget,
   'calendar-ics': CalendarICSWidget,
   'aqi': AQIWidget,
+  'links-list': LinksWidget,
+  'status': StatusWidget,
 };
 
-export function WidgetRenderer({ widget, editMode, onChange }) {
+export function WidgetRenderer({ widget, editMode, onChange, onChangePropsPersist, onDragEnd }) {
   const { x = 1, y = 1, w = 3, h = 1, type, title, subtitle, props = {} } = widget;
   const Comp = widgetRegistry[type];
   const [refreshSignal, setRefreshSignal] = useState(0);
   const grid = useGrid();
+  const wid = useMemo(() => `links-${Math.random().toString(36).slice(2)}-${Date.now()}`, []);
+  const [linksLocked, setLinksLocked] = useState(true);
 
   if (!Comp) return (
     <Box sx={{ gridColumn: `${x} / span ${w}`, gridRow: `${y} / span ${h}` }}>
@@ -56,6 +66,7 @@ export function WidgetRenderer({ widget, editMode, onChange }) {
       widthPx: w * grid.colWidth + (w - 1) * grid.gap,
       heightPx: h * grid.rowHeight + (h - 1) * grid.gap,
     };
+    let last = null;
     function onMove(ev) {
       ev.preventDefault();
       const dx = ev.clientX - start.px;
@@ -75,11 +86,13 @@ export function WidgetRenderer({ widget, editMode, onChange }) {
           nh = Math.max(1, Math.round((start.heightPx + dy) / (grid.rowHeight + grid.gap)));
         }
       }
+      last = { nx, ny, nw, nh };
       onChange && onChange({ ...widget, x: nx, y: ny, w: nw, h: nh });
     }
     function onUp() {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
+      if (last && onDragEnd) onDragEnd({ ...widget, x: last.nx, y: last.ny, w: last.nw, h: last.nh });
     }
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp, { once: true });
@@ -97,8 +110,35 @@ export function WidgetRenderer({ widget, editMode, onChange }) {
           <Box onPointerDown={(e) => startDrag('resize-corner', e)} sx={{ position: 'absolute', right: 0, bottom: 0, width: 14, height: 14, cursor: 'nwse-resize', zIndex: 2, bgcolor: 'rgba(144,202,249,0.35)', borderTopLeftRadius: 2 }} />
         </>
       )}
-      <DashboardCard title={title} subtitle={subtitle} onReload={() => setRefreshSignal(s => s + 1)}>
-        <Comp {...props} refreshSignal={refreshSignal} />
+      <DashboardCard title={title} subtitle={subtitle} onReload={() => setRefreshSignal(s => s + 1)}
+        actions={type === 'links-list' ? (
+          <>
+            <Tooltip title={linksLocked ? 'Unlock links editing' : 'Lock links editing'}>
+              <IconButton size="small" onClick={() => {
+                const next = !linksLocked;
+                setLinksLocked(next);
+                window.dispatchEvent(new CustomEvent('links:lock', { detail: { wid, locked: next } }));
+              }}>
+                {linksLocked ? <LockIcon fontSize="small" /> : <LockOpenIcon fontSize="small" />}
+              </IconButton>
+            </Tooltip>
+            {!linksLocked && (
+              <Tooltip title="Add link">
+                <IconButton size="small" onClick={() => {
+                  window.dispatchEvent(new CustomEvent('links:add', { detail: { wid } }));
+                }}>
+                  <AddIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+          </>
+        ) : null}
+      >
+        <Comp {...props}
+          wid={wid}
+          refreshSignal={refreshSignal}
+          onChangePropsPersist={onChangePropsPersist}
+        />
       </DashboardCard>
     </Box>
   );

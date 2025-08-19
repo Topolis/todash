@@ -1,5 +1,8 @@
 ## Todash: Extensible Dashboard (React + Node + MUI)
 
+### Disclaimer
+This application has been written with a lot of help from AI. There has not been a full detailed code review to rule out any potential security flaws or other problems. This application has unproteced api's and should not be used outside a controlled environment inside a secured network. Use at your won risk!
+
 ### Overview
 This repo scaffolds a dashboard application with:
 - Node.js Express backend exposing:

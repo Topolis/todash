@@ -48,9 +48,43 @@ function getSecret(name) {
   }
   return process.env[name] ?? (__SECRETS_CACHE ? __SECRETS_CACHE[name] : undefined);
 }
+// Value functions registry for 'status' widget and others
+import { registerValueFunction } from './valueFunctions.js';
+
 
 // Schema validator
 const ajv = new Ajv({ allErrors: true, strict: false });
+// Register built-in value functions at startup
+registerValueFunction('cpu-load', async () => {
+  const os = await import('os');
+  const cpus = os.cpus();
+  const total = cpus.reduce((acc, c) => acc + c.times.user + c.times.nice + c.times.sys + c.times.irq + c.times.idle, 0);
+  const idle = cpus.reduce((acc, c) => acc + c.times.idle, 0);
+  if (!global.__cpuPrevSample) {
+    global.__cpuPrevSample = { total, idle, ts: Date.now() };
+    return Math.round((1 - idle / total) * 100);
+  }
+  const prev = global.__cpuPrevSample;
+  global.__cpuPrevSample = { total, idle, ts: Date.now() };
+  const dTotal = total - prev.total;
+  const dIdle = idle - prev.idle;
+  const dBusy = dTotal - dIdle;
+  return dTotal > 0 ? Math.round((dBusy / dTotal) * 100) : 0;
+});
+
+registerValueFunction('memory-used', async () => {
+  const os = await import('os');
+  return os.totalmem() - os.freemem();
+});
+
+registerValueFunction('memory-total', async () => {
+  const os = await import('os');
+  return os.totalmem();
+});
+
+// Register additional value functions (Pi-hole etc.)
+import './plugins/piholeValues.js';
+
 const validateDashboard = ajv.compile(dashboardSchema);
 
 function validateOrThrow(cfg) {
@@ -91,6 +125,8 @@ const rssParser = new Parser({
     timeout: 10000,
   }
 });
+import { statusPlugin } from './plugins/statusPlugin.js';
+
 const plugins = {
   'rss-feed': {
     async fetchData(config) {
@@ -208,6 +244,7 @@ const plugins = {
       const url = `https://api.open-meteo.com/v1/forecast?${params.toString()}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error('Forecast API error');
+
       const json = await res.json();
       cacheSet(key, json, ttlMs);
       return json;
@@ -217,19 +254,77 @@ const plugins = {
     async fetchData(config) {
       // Basic info: version from package.json and uptime
       const rootPkg = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'package.json'), 'utf8'));
-      // Try to enrich with git info if available
+
+      // Git info (best-effort)
       let git = null;
+      const { execSync } = await import('node:child_process');
+      function run(cmd) {
+        try { return execSync(cmd, { encoding: 'utf8', stdio: ['ignore','pipe','ignore'] }).trim(); }
+        catch { return null; }
+      }
       try {
-        const rev = fs.readFileSync(path.resolve(process.cwd(), '.git/HEAD'), 'utf8').trim();
-        let ref = rev;
-        if (rev.startsWith('ref:')) {
-          const refPath = rev.split(' ')[1];
-          const full = path.resolve(process.cwd(), '.git', refPath);
-          const sha = fs.existsSync(full) ? fs.readFileSync(full, 'utf8').trim() : null;
-          git = { ref: refPath, commit: sha };
-        } else {
-          git = { commit: rev };
+        const branch = run('git rev-parse --abbrev-ref HEAD');
+        const commit = run('git rev-parse HEAD');
+        const upstream = run('git rev-parse --abbrev-ref --symbolic-full-name @{u}');
+        let ahead = null, behind = null;
+        if (upstream) {
+          const counts = run('git rev-list --left-right --count @{u}...HEAD');
+          if (counts) {
+            const [left, right] = counts.split(/\s+/).map(n => Number(n));
+            // left= behind, right= ahead for @{u}...HEAD
+            behind = left; ahead = right;
+          }
         }
+
+        const status = run('git status --porcelain');
+        let changed = 0, untracked = 0;
+        if (status) {
+          const lines = status.split(/\r?\n/).filter(Boolean);
+          for (const ln of lines) {
+            if (ln.startsWith('??')) untracked++;
+            else changed++;
+          }
+        }
+        const lastMsg = run('git log -1 --pretty=%s');
+        const lastTime = run('git log -1 --pretty=%cI');
+        const remoteUrl = run('git config --get remote.origin.url');
+
+        git = { branch, commit, upstream, ahead, behind, changed, untracked, lastMsg, lastTime, remoteUrl };
+
+        // GitHub (optional)
+        let github = null;
+        const token = getSecret('GITHUB_TOKEN') || getSecret('GH_TOKEN');
+        if (remoteUrl && /github\.com/.test(remoteUrl)) {
+          // parse owner/repo
+          let owner = null, repo = null;
+          if (remoteUrl.startsWith('git@')) {
+            const m = remoteUrl.match(/github\.com:(.+?)\/(.+?)(\.git)?$/);
+            if (m) { owner = m[1]; repo = m[2].replace(/\.git$/, ''); }
+          } else {
+            try {
+              const u = new URL(remoteUrl.replace(/\.git$/, ''));
+              const parts = u.pathname.replace(/^\//,'').split('/');
+              owner = parts[0]; repo = parts[1];
+            } catch {}
+          }
+          if (owner && repo) {
+            const headers = { 'Accept': 'application/vnd.github+json', 'User-Agent': 'todash-dashboard' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            try {
+              const branchName = git.branch || 'main';
+              const pullsRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls?state=open&head=${owner}:${branchName}&per_page=1`, { headers });
+              const pulls = pullsRes.ok ? await pullsRes.json() : [];
+              const prCount = Array.isArray(pulls) ? pulls.length : 0;
+              github = {
+                owner, repo, branch: branchName,
+                repoUrl: `https://github.com/${owner}/${repo}`,
+                branchUrl: `https://github.com/${owner}/${repo}/tree/${encodeURIComponent(branchName)}`,
+                pullsOpen: prCount,
+              };
+            } catch {}
+          }
+        }
+        if (github) git.github = github;
       } catch {}
 
       return {
@@ -265,6 +360,7 @@ const plugins = {
       const key = `transit:mvg:${url}`;
       const cached = cacheGet(key);
       if (!config.force && cached) return cached.slice(0, limit);
+
 
       const res = await fetch(url, {
         headers: {
@@ -311,6 +407,7 @@ const plugins = {
 
       cacheSet(key, incidents, ttlMs);
       return incidents.slice(0, limit);
+
     },
   },
   'email': {
@@ -343,31 +440,6 @@ const plugins = {
         if (action === 'getBody') {
           if (!config.uid) throw new Error('getBody requires uid');
           let raw = '';
-// Save layout endpoint: writes <name>.local.yaml with replaced widgets and returns newName
-app.post('/api/layout', (req, res) => {
-  try {
-    const { name, widgets } = req.body || {};
-    if (!name || !Array.isArray(widgets)) return res.status(400).json({ error: 'name and widgets are required' });
-    // Basic name sanitization: allow letters, numbers, dash, underscore, dot
-    if (!/^[A-Za-z0-9._-]+$/.test(name)) return res.status(400).json({ error: 'invalid dashboard name' });
-
-    // Load base config to preserve title/settings/grid; fall back if missing
-    let base;
-    try { base = loadDashboardConfig(name); } catch { base = { title: name, settings: {}, grid: { columns: 12, gap: 12, rowHeight: 120 }, widgets: [] }; }
-
-    const newName = name.endsWith('.local') ? name : `${name}.local`;
-    const cfg = { ...base, widgets };
-    // Validate before writing
-    validateOrThrow(cfg);
-
-    const outPath = path.join(dashboardsDir, `${newName}.yaml`);
-    const yamlStr = yaml.dump(cfg, { noRefs: true, lineWidth: 120 });
-    fs.writeFileSync(outPath, yamlStr, 'utf8');
-    res.json({ ok: true, newName });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
 
           for await (const msg of client.fetch({ uid: Number(config.uid) }, { source: true, envelope: true, internalDate: true })) {
             const chunks = [];
@@ -457,6 +529,7 @@ app.post('/api/layout', (req, res) => {
       return merged;
     }
   },
+  'status': statusPlugin,
   'calendar-ics': {
     async fetchData(config) {
       const ttlMs = (process.env.CACHE_TTL_MS && Number(process.env.CACHE_TTL_MS)) || 10 * 60 * 1000;
@@ -754,6 +827,62 @@ app.post('/api/widget/:type', async (req, res) => {
 });
 
 // In production, optionally serve built frontend
+// Save layout endpoint: writes widgets to the active dashboard file
+// Rules:
+// - If base name is 'sample', write to sample.local.yaml to avoid clobbering the example
+// - Otherwise, always write to the base file (strip .local suffix if present)
+app.post('/api/layout', (req, res) => {
+  try {
+    const { name, widgets } = req.body || {};
+    if (!name || !Array.isArray(widgets)) return res.status(400).json({ error: 'name and widgets are required' });
+    if (!/^[A-Za-z0-9._-]+$/.test(name)) return res.status(400).json({ error: 'invalid dashboard name' });
+
+    const baseName = name.replace(/\.local$/, '');
+
+    // Load base config to preserve title/settings/grid
+    let base;
+    try { base = loadDashboardConfig(baseName); }
+    catch { base = { title: baseName, settings: {}, grid: { columns: 12, gap: 12, rowHeight: 120 }, widgets: [] }; }
+
+    const targetName = baseName === 'sample' ? `${baseName}.local` : baseName;
+    const cfg = { ...base, widgets };
+    validateOrThrow(cfg);
+
+    const outPath = path.join(dashboardsDir, `${targetName}.yaml`);
+    const yamlStr = yaml.dump(cfg, { noRefs: true, lineWidth: 120 });
+    fs.writeFileSync(outPath, yamlStr, 'utf8');
+    res.json({ ok: true, newName: targetName });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Persist single widget props in current dashboard
+app.post('/api/dashboard/:name/widget/:index/props', (req, res) => {
+  try {
+    const { name } = req.params;
+    const index = Number(req.params.index);
+    const { props } = req.body || {};
+    if (!name || !Number.isInteger(index)) return res.status(400).json({ error: 'invalid name or index' });
+    if (!props || typeof props !== 'object') return res.status(400).json({ error: 'props object required' });
+
+    const cfg = loadDashboardConfig(name);
+    const widgets = cfg.widgets || [];
+    if (index < 0 || index >= widgets.length) return res.status(404).json({ error: 'widget index out of range' });
+
+    widgets[index] = { ...widgets[index], props: { ...(widgets[index].props || {}), ...props } };
+    const updated = { ...cfg, widgets };
+    validateOrThrow(updated);
+
+    const outPath = path.join(dashboardsDir, `${name}.yaml`);
+    const yamlStr = yaml.dump(updated, { noRefs: true, lineWidth: 120 });
+    fs.writeFileSync(outPath, yamlStr, 'utf8');
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 if (process.env.SERVE_WEB === 'true') {
   const distDir = path.resolve(process.cwd(), 'web', 'dist');
   if (fs.existsSync(distDir)) {
