@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Avatar, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid, IconButton, Stack, TextField, Tooltip, Typography } from '@mui/material';
+import { Alert, Avatar, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Stack, TextField, Tooltip, Typography } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import EditIcon from '@mui/icons-material/Edit';
-import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { retryingJson } from '../../lib/retryFetch.js';
+import SquareLink from './SquareLink.jsx';
 
 // Supports groups: [{ label?, items: [{label?, url, icon?}] }]; falls back to flat items[] if groups not provided
-export default function LinksWidget({ items = [], groups = [], allowEdit = true, onChangePropsPersist, refreshSignal, wid }) {
+export default function LinksWidget({ items = [], groups = [], allowEdit = true, onChangePropsPersist, refreshSignal, wid, layout = 'list', squareMin = 56, squareGap = 1 }) {
   const hasGroups = Array.isArray(groups) && groups.length > 0;
   const [stateGroups, setStateGroups] = useState(
     hasGroups ? groups.map(g => ({ label: g.label || null, items: Array.isArray(g.items) ? g.items : [] }))
@@ -74,32 +74,52 @@ export default function LinksWidget({ items = [], groups = [], allowEdit = true,
           {group.label && (
             <Typography variant="caption" sx={{ color: 'rgba(200,210,230,0.7)', ml: 0.5 }}>{group.label}</Typography>
           )}
-          <Grid container spacing={1}>
-            {group.items.map((link, i) => (
-              <Grid key={i} item xs={2} sm={2} md={2} lg={2}>
-                <Stack component="a" href={link.url} target="_blank" rel="noreferrer"
-                  direction="row" spacing={1} alignItems="center"
-                  sx={{ p: 1, bgcolor: 'rgba(255,255,255,0.04)', borderRadius: 1, textDecoration: 'none', color: 'inherit', transition: 'background-color 120ms ease', '&:hover': { bgcolor: 'rgba(144,202,249,0.12)' } }}>
-                  <Avatar src={link.icon} alt={link.label} sx={{ width: 28, height: 28 }}>{link.label?.[0]?.toUpperCase()}</Avatar>
-                  <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                    <Tooltip title={link.url}>
-                      <Typography variant="body2" noWrap sx={{ color: 'rgba(200, 210, 230, 0.85)' }}>
-                        {link.label || link.url}
-                      </Typography>
-                    </Tooltip>
-                  </Box>
-                  {allowEdit && !locked && (
-                    <Stack direction="row" spacing={0.5}>
-                      <IconButton size="small" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditing({ ...link, index: i, groupIndex: gi }); setOpen(true); }}><EditIcon fontSize="small" /></IconButton>
-                      <IconButton size="small" onClick={(e) => { e.preventDefault(); e.stopPropagation(); remove(i, gi); }}><DeleteIcon fontSize="small" /></IconButton>
-                    </Stack>
-                  )}
-                </Stack>
-              </Grid>
-            ))}
-          </Grid>
+
+          {layout === 'square' ? (
+            <Grid container spacing={squareGap} alignItems="stretch">
+              {group.items.map((link, i) => (
+                <Grid key={i} item xs={3} sm={2} md={1} lg={1} xl={1} sx={{ display: 'flex' }}>
+                  <SquareLink
+                    link={link}
+                    allowEdit={allowEdit}
+                    locked={locked}
+                    onEdit={() => setEditing({ ...link, index: i, groupIndex: gi })}
+                    onDelete={() => remove(i, gi)}
+                    min={squareMin}
+                  />
+                </Grid>
+              ))}
+            </Grid>
+          ) : (
+            <Grid container spacing={1}>
+              {group.items.map((link, i) => (
+                <Grid key={i} item xs={2} sm={2} md={2} lg={2}>
+                  <Stack component="a" href={link.url} target="_blank" rel="noreferrer"
+                    direction="row" spacing={1} alignItems="center"
+                    sx={{ p: 1, bgcolor: 'rgba(255,255,255,0.04)', borderRadius: 1, textDecoration: 'none', color: 'inherit', transition: 'background-color 120ms ease', '&:hover': { bgcolor: 'rgba(144,202,249,0.12)' } }}>
+                    <Avatar src={link.icon} alt={link.label} sx={{ width: 28, height: 28 }}>{link.label?.[0]?.toUpperCase()}</Avatar>
+                    <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                      <Tooltip title={link.url}>
+                        <Typography variant="body2" noWrap sx={{ color: 'rgba(200, 210, 230, 0.85)' }}>
+                          {link.label || link.url}
+                        </Typography>
+                      </Tooltip>
+                    </Box>
+                    {allowEdit && !locked && (
+                      <Stack direction="row" spacing={0.5}>
+                        <IconButton size="small" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditing({ ...link, index: i, groupIndex: gi }); setOpen(true); }}><EditIcon fontSize="small" /></IconButton>
+                        <IconButton size="small" onClick={(e) => { e.preventDefault(); e.stopPropagation(); remove(i, gi); }}><DeleteIcon fontSize="small" /></IconButton>
+                      </Stack>
+                    )}
+                  </Stack>
+                </Grid>
+              ))}
+            </Grid>
+          )}
         </Box>
       ))}
+
+
 
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{editing?.index != null ? 'Edit Link' : 'Add Link'}</DialogTitle>
