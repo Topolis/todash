@@ -105,3 +105,64 @@ plugins['your-type'] = {
 - Add error states and retry strategies per widget (graceful fallbacks, backoff, retries)
 - Add schema validation for YAML (validate dashboards' structure and types on load and/or startup)
 
+
+
+### Run as a service on Ubuntu (systemd + autostart)
+This is a minimal, production-ish setup that serves the built frontend from the Node backend and auto-starts on boot.
+
+1) Prepare a directory and a system user
+- sudo mkdir -p /opt/todash
+- sudo chown -R $USER:$USER /opt/todash
+- git clone your repo into /opt/todash (or copy files there)
+
+2) Install deps and build the frontend
+- cd /opt/todash
+- npm ci
+- npm run build
+
+3) Create a system user (optional but recommended)
+- sudo useradd -r -s /usr/sbin/nologin todash || true
+- sudo chown -R todash:todash /opt/todash
+
+4) Create a systemd unit file
+- sudo tee /etc/systemd/system/todash.service >/dev/null <<'UNIT'
+[Unit]
+Description=Todash Dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=todash
+Group=todash
+WorkingDirectory=/opt/todash
+# Serve built frontend from Express
+Environment=NODE_ENV=production
+Environment=SERVE_WEB=true
+# Change if you want a different port
+Environment=PORT=4000
+# Optional: enable extra logging for Pi-hole integration
+# Environment=DEBUG_PIHOLE=1
+ExecStart=/usr/bin/node server/src/index.js
+Restart=always
+RestartSec=10
+# Increase file limits if needed
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+5) Enable and start the service
+- sudo systemctl daemon-reload
+- sudo systemctl enable todash
+- sudo systemctl start todash
+- Check status: sudo systemctl status todash
+- Tail logs: sudo journalctl -u todash -f
+
+6) Access
+- Backend: http://<server-ip>:4000
+- Frontend is served by the backend at the same URL when SERVE_WEB=true
+
+Notes
+- If you deploy updates: pull changes, run npm ci (if package.json changed) and npm run build, then sudo systemctl restart todash
+- For development, keep using: npm run dev (separate Vite + backend). For service mode, use the build + SERVE_WEB=true approach above.

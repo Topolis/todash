@@ -7,8 +7,7 @@ import LockOpenIcon from '@mui/icons-material/LockOpen';
 import DashboardCard from '../components/DashboardCard.jsx';
 
 import RSSWidget from './rss/RSSWidget.jsx';
-import WeatherWidget from './weather/WeatherWidget.jsx';
-import ForecastWidget from './weather/ForecastWidget.jsx';
+import CombinedWeatherWidget from './weather/CombinedWeatherWidget.jsx';
 import ProjectStatusWidget from './project/ProjectStatusWidget.jsx';
 import SystemStatsWidget from './system/SystemStatsWidget.jsx';
 import TransitIncidentsWidget from './transit/TransitIncidentsWidget.jsx';
@@ -25,8 +24,8 @@ export const useDashboardSettings = () => useContext(DashboardSettingsContext);
 
 export const widgetRegistry = {
   'rss-feed': RSSWidget,
-  'weather': WeatherWidget,
-  'weather-forecast': ForecastWidget,
+  'weather': CombinedWeatherWidget,
+  'weather-forecast': CombinedWeatherWidget,
   'project-status': ProjectStatusWidget,
   'system-stats': SystemStatsWidget,
   'transit-incidents': TransitIncidentsWidget,
