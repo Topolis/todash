@@ -78,7 +78,7 @@ export default function LinksWidget({ items = [], groups = [], allowEdit = true,
           {layout === 'square' ? (
             <Grid container spacing={squareGap} alignItems="stretch">
               {group.items.map((link, i) => (
-                <Grid key={i} item xs={3} sm={2} md={1} lg={1} xl={1} sx={{ display: 'flex' }}>
+                <Grid key={i} size={{ xs: 3, sm: 2, md: 1, lg: 1, xl: 1 }} sx={{ display: 'flex' }}>
                   <SquareLink
                     link={link}
                     allowEdit={allowEdit}
@@ -93,7 +93,7 @@ export default function LinksWidget({ items = [], groups = [], allowEdit = true,
           ) : (
             <Grid container spacing={1}>
               {group.items.map((link, i) => (
-                <Grid key={i} item xs={2} sm={2} md={2} lg={2}>
+                <Grid key={i} size={{ xs: 2, sm: 2, md: 2, lg: 2 }}>
                   <Stack component="a" href={link.url} target="_blank" rel="noreferrer"
                     direction="row" spacing={1} alignItems="center"
                     sx={{ p: 1, bgcolor: 'rgba(255,255,255,0.04)', borderRadius: 1, textDecoration: 'none', color: 'inherit', transition: 'background-color 120ms ease', '&:hover': { bgcolor: 'rgba(144,202,249,0.12)' } }}>
