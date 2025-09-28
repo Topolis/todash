@@ -1,0 +1,10 @@
+Dripicons Weather icon set
+
+- Source: https://github.com/amitjakhu/dripicons-weather
+- Author: Amit Jakhu (https://amitjakhu.com/)
+- License: Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
+  https://creativecommons.org/licenses/by-sa/4.0/
+
+These SVGs are included under /icons/weather/dripicons and used in the Weather & Forecast widget.
+No modifications were made to the SVG paths; only sizing and color inversion via CSS filters are applied at runtime.
+
