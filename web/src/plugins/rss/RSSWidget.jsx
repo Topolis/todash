@@ -66,7 +66,7 @@ function MsnLayout({ items, dateFmt, rowMinHeight = 160 }) {
         const isWide = (m === 0 || m === 5); // pattern: 2-col, 1-col x4, 2-col
         const cols = isWide ? 6 : 3; // 50% or 25% of a 12-col grid
         return (
-          <Grid key={i} item xs={12} md={cols} sx={{ display: 'flex' }}>
+          <Grid key={i} size={{ xs: 12, md: cols }} sx={{ display: 'flex' }}>
             <MsnCard item={it} size={isWide ? 'lg' : 'md'} sx={{ minHeight: minH, flex: 1 }} dateFmt={dateFmt} />
           </Grid>
         );
