@@ -55,6 +55,8 @@ export default function BasePanel({
       heightPx: h * grid.rowHeight + (h - 1) * grid.gap,
     };
 
+    let currentPanel = panel;
+
     function onMove(me: PointerEvent) {
       const dx = me.clientX - start.px;
       const dy = me.clientY - start.py;
@@ -81,14 +83,15 @@ export default function BasePanel({
       }
 
       if (newX !== x || newY !== y || newW !== w || newH !== h) {
-        onChange?.({ ...panel, x: newX, y: newY, w: newW, h: newH });
+        currentPanel = { ...panel, x: newX, y: newY, w: newW, h: newH };
+        onChange?.(currentPanel);
       }
     }
 
     function onUp() {
       document.removeEventListener('pointermove', onMove);
       document.removeEventListener('pointerup', onUp);
-      onDragEnd?.(panel);
+      onDragEnd?.(currentPanel);
     }
 
     document.addEventListener('pointermove', onMove);

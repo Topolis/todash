@@ -62,14 +62,14 @@ export default function App() {
     [dashboard]
   );
 
-  async function persistLayout(newLayout: WidgetConfig[]) {
+  async function persistLayout(newLayout: PanelConfig[]) {
     try {
       const isDev = window.location.port === '5173';
       const apiBase = isDev ? 'http://localhost:4000' : '';
       const res = await fetch(`${apiBase}/api/layout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, widgets: newLayout }),
+        body: JSON.stringify({ name, panels: newLayout }),
       });
 
       const text = await res.text();
