@@ -69,34 +69,47 @@ registerValueFunction('memory-total', async () => {
   return os.totalmem();
 });
 
-registerValueFunction('cpu-temperature', async () => {
-  const si = await import('systeminformation');
-  const temp = await si.cpuTemperature();
-  // Return null if no temperature data available (common in VMs or systems without sensors)
-  if (temp.main === null || temp.main === undefined || temp.main === -1) {
-    return null;
-  }
-  return Math.round(temp.main);
-});
+/**
+ * Generic sensor reader - reads any sensor from /sys/class/hwmon/
+ * Config options:
+ * - name: sensor name to match (e.g., "k10temp", "acpitz", "nvme")
+ * - input: input file to read (e.g., "temp1_input", "temp2_input")
+ * - divisor: divisor to convert raw value (default: 1000 for temperature)
+ */
+registerValueFunction('sensor', async ({ name, input = 'temp1_input', divisor = 1000 }: { name: string; input?: string; divisor?: number }) => {
+  try {
+    const fs = await import('fs/promises');
+    const path = await import('path');
+    const hwmonPath = '/sys/class/hwmon';
 
-registerValueFunction('system-temperature', async () => {
-  const si = await import('systeminformation');
-  const temp = await si.cpuTemperature();
-  // Return average of all cores if available, otherwise main
-  if (temp.cores && temp.cores.length > 0) {
-    const validCores = temp.cores.filter((t: number) => t !== null && t !== undefined && t !== -1);
-    if (validCores.length > 0) {
-      const sum = validCores.reduce((acc: number, t: number) => acc + t, 0);
-      return Math.round(sum / validCores.length);
+    const dirs = await fs.readdir(hwmonPath);
+    for (const dir of dirs) {
+      try {
+        const namePath = path.join(hwmonPath, dir, 'name');
+        const sensorName = (await fs.readFile(namePath, 'utf8')).trim();
+
+        // Check if this is the sensor we're looking for
+        if (name && sensorName.toLowerCase().includes(name.toLowerCase())) {
+          const inputPath = path.join(hwmonPath, dir, input);
+          const rawValue = await fs.readFile(inputPath, 'utf8');
+          const value = parseInt(rawValue.trim()) / divisor;
+
+          if (!isNaN(value)) {
+            return Math.round(value * 10) / 10;
+          }
+        }
+      } catch (e) {
+        // Skip this sensor
+        continue;
+      }
     }
+  } catch (e) {
+    // hwmon not available
   }
-  // Fallback to main temperature
-  if (temp.main !== null && temp.main !== undefined && temp.main !== -1) {
-    return Math.round(temp.main);
-  }
-  // Return null if no temperature data available
   return null;
 });
+
+
 
 /**
  * Fetch system stats data
