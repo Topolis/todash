@@ -1,0 +1,25 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "lib": ["ES2022"],
+    "jsx": "preserve",
+    "noEmit": false,
+    "outDir": "./dist",
+    "skipLibCheck": true
+  },
+  "include": [
+    "src/server.ts",
+    "src/server/**/*",
+    "src/types/**/*",
+    "src/plugins/**/data.ts",
+    "src/plugins/**/index.ts"
+  ],
+  "exclude": [
+    "src/main.tsx",
+    "src/app/**/*",
+    "src/plugins/**/*.tsx",
+    "node_modules"
+  ]
+}

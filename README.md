@@ -1,168 +1,307 @@
-## Todash: Extensible Dashboard (React + Node + MUI)
+# Todash: Extensible Dashboard (Unified Vite + TypeScript)
 
-### Disclaimer
-This application has been written with a lot of help from AI. There has not been a full detailed code review to rule out any potential security flaws or other problems. This application has unproteced api's and should not be used outside a controlled environment inside a secured network. Use at your won risk!
+## Overview
 
-### Overview
-This repo scaffolds a dashboard application with:
-- Node.js Express backend exposing:
-  - Dashboards list `/api/dashboards` and loader `/api/dashboards/:name`
-  - Widget data endpoints `/api/widget/:type`
-- React + Material UI frontend with:
-  - CSS Grid layout, themed DashboardCard
-  - Pluggable widget registry and 4 starter widgets:
-    - rss-feed, weather, project-status, system-stats
+Todash is a modern, extensible dashboard application built with:
+- **Unified codebase**: Single application with both frontend and backend
+- **TypeScript**: Full type safety across the entire stack
+- **Vite**: Fast development with hot module replacement
+- **React + MUI**: Modern UI components and theming
+- **Express**: Backend API server
+- **Plugin system**: Easy to extend with new widget types
 
-Focus is on extensibility: add new widgets by implementing a small server-side data provider and a client-side renderer, without redoing layout or chrome each time.
+## Quick Start
 
-### Monorepo structure
-- server/ — Express backend
-- web/ — Vite React frontend
-- dashboards/ — YAML configs (multiple files supported)
+### Installation
+```bash
+npm install
+```
 
-### Install & run
-1. Install deps (uses workspaces):
-   - npm install
-2. Start dev servers (runs backend on 4000 and vite on 5173):
-   - npm run dev
-3. Open http://localhost:5173
+### Development
+```bash
+npm run dev
+```
 
-To build and serve frontend from Express (production-ish):
-- npm run build
-- SERVE_WEB=true npm start
+This starts:
+- **Vite dev server** on http://localhost:5173 (frontend with HMR)
+- **Express API server** on http://localhost:4000 (backend)
 
-Note: In dev, Vite proxies /api to http://localhost:4000.
+Open http://localhost:5173 in your browser.
 
-### Dashboard configuration (YAML)
-Example: dashboards/sample.yaml
+### Production Build
+```bash
+npm run build  # Build both frontend and backend
+npm start      # Start production server on port 4000
+```
 
-- grid:
-  - columns: number of columns (default 12)
-  - gap: CSS gap in px (default 12)
-  - rowHeight: row height in px (default 120)
-- widgets: array of widgets with placement and props
-  - type: one of rss-feed | weather | project-status | system-stats
-  - title: shown in the card header
-  - x,y: 1-based grid start column and row
-  - w,h: spans in columns and rows
-  - props: type-specific configuration passed to the widget
+## Project Structure
 
-### Writing a new widget plugin
-1. Server: add a data provider in server/src/index.js plugins map:
-   - key: widget type string
-   - fetchData(config): returns JSON data object
-2. Client: add a renderer component under web/src/plugins/<yourtype>/YourWidget.jsx
-   - export default function YourWidget(props) { ... }
-3. Register it in web/src/plugins/index.js widgetRegistry
-4. Use it in YAML with type: <yourtype> and appropriate props
+```
+src/
+├── main.tsx                 # React entry point
+├── server.ts                # Express server entry point
+├── app/                     # Frontend code
+│   ├── App.tsx             # Main React component
+│   ├── components/         # Shared React components
+│   │   ├── DashboardCard.tsx
+│   │   ├── DashboardGrid.tsx
+│   │   ├── GridContext.tsx
+│   │   ├── WidgetRenderer.tsx
+│   │   └── SaveLayoutBar.tsx
+│   └── lib/                # Frontend utilities
+│       ├── retryFetch.ts
+│       └── dateFormat.ts
+├── server/                  # Backend code
+│   ├── api.ts              # API route handlers
+│   ├── cache.ts            # Caching utilities
+│   ├── secrets.ts          # Secrets management
+│   ├── schema.ts           # Validation schemas
+│   └── valueFunctions.ts   # Status widget value functions
+├── plugins/                 # Plugin system
+│   ├── index.ts            # Plugin registry
+│   └── [plugin-name]/      # Individual plugins
+│       ├── index.ts        # Plugin definition
+│       ├── widget.tsx      # React component
+│       └── data.ts         # Data provider
+└── types/                   # TypeScript definitions
+    ├── plugin.ts           # Plugin interfaces
+    ├── dashboard.ts        # Dashboard types
+    └── api.ts              # API types
 
-### Starter widgets
-- rss-feed: reads RSS URL and shows latest items
-- weather: uses open-meteo (no key) by lat/long
-- project-status: shows app name/version and server uptime
-- system-stats: shows CPU/mem load (server host)
+dashboards/                  # YAML configuration files
+├── sample.yaml
+└── [your-dashboards].yaml
+```
 
-### Notes
-- This is a starter. For production, consider:
-  - Error handling/caching for external APIs
-  - Auth if needed
-  - A more sophisticated grid (drag/resize) like react-grid-layout
-  - Serving static frontend via Express in production mode
+## Dashboard Configuration (YAML)
 
-### Plugin template (client)
-Create web/src/plugins/yourtype/YourWidget.jsx:
+Dashboards are configured using YAML files in the `dashboards/` directory.
 
-```jsx
-export default function YourWidget(props) {
-  // fetch data (if needed):
-  // const res = await fetch('/api/widget/your-type', { method: 'POST', body: JSON.stringify(props) })
-  return <div>Render your widget here</div>;
+Example: `dashboards/sample.yaml`
+
+```yaml
+name: Sample Dashboard
+settings:
+  dateFormat: "DD.MM.YYYY HH:mm"
+  defaultLocation:
+    latitude: 48.1351
+    longitude: 11.5820
+
+grid:
+  columns: 12
+  gap: 12
+  rowHeight: 120
+
+widgets:
+  - type: weather
+    title: Current Weather
+    x: 1
+    y: 1
+    w: 3
+    h: 2
+    props:
+      latitude: 48.1351
+      longitude: 11.5820
+```
+
+### Configuration Options
+
+**Grid:**
+- `columns`: Number of columns (default: 12)
+- `gap`: Gap between widgets in pixels (default: 12)
+- `rowHeight`: Height of each row in pixels (default: 120)
+
+**Widget:**
+- `type`: Widget type (must match registered plugin name)
+- `title`: Display title
+- `subtitle`: Optional subtitle
+- `x`, `y`: Grid position (1-based)
+- `w`, `h`: Widget size in grid units
+- `refreshSeconds`: Auto-refresh interval (optional)
+- `props`: Widget-specific configuration
+
+## Creating a New Plugin
+
+See [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md) for detailed instructions.
+
+Quick example:
+
+### 1. Create plugin directory
+```bash
+mkdir -p src/plugins/myplugin
+```
+
+### 2. Create data provider (`data.ts`)
+```typescript
+export interface MyPluginConfig {
+  apiKey: string;
+}
+
+export interface MyPluginData {
+  value: string;
+}
+
+export async function fetchMyPluginData(config: MyPluginConfig): Promise<MyPluginData> {
+  // Fetch data from API
+  const response = await fetch(`https://api.example.com/data`);
+  return await response.json();
 }
 ```
 
-Register in web/src/plugins/index.js:
+### 3. Create widget component (`widget.tsx`)
+```typescript
+import React, { useEffect, useState } from 'react';
+import type { PluginWidgetProps } from '@types/plugin';
 
-```js
-import YourWidget from './yourtype/YourWidget.jsx';
-export const widgetRegistry = { ... , 'your-type': YourWidget };
+export default function MyPluginWidget(props: PluginWidgetProps) {
+  const [data, setData] = useState(null);
+  
+  useEffect(() => {
+    fetch('/api/widget/myplugin', {
+      method: 'POST',
+      body: JSON.stringify(props),
+    })
+      .then(r => r.json())
+      .then(json => setData(json.data));
+  }, [props.refreshSignal]);
+  
+  return <div>{data?.value}</div>;
+}
 ```
 
-### Plugin template (server)
-In server/src/index.js add:
+### 4. Register plugin (`index.ts`)
+```typescript
+import type { PluginDefinition } from '@types/plugin';
+import MyPluginWidget from './widget';
+import { fetchMyPluginData } from './data';
 
-```js
-plugins['your-type'] = {
-  async fetchData(config) {
-    // Use config from YAML props
-    return { /* data */ };
-  }
+export const myPlugin: PluginDefinition = {
+  name: 'myplugin',
+  displayName: 'My Plugin',
+  widget: MyPluginWidget,
+  dataProvider: fetchMyPluginData,
+  serverSide: true,
 };
 ```
 
+### 5. Register in application
+```typescript
+// src/main.tsx
+import { myPlugin } from '@plugins/myplugin';
+registerPlugin(myPlugin);
 
-### Next steps
-- Add server-side caching layers for RSS/Weather with TTLs (e.g., 5 minutes) to reduce API calls
-- Add error states and retry strategies per widget (graceful fallbacks, backoff, retries)
-- Add schema validation for YAML (validate dashboards' structure and types on load and/or startup)
+// src/server.ts
+import { myPlugin } from './plugins/myplugin/index.js';
+registerPlugin(myPlugin);
+```
 
+## Available Plugins
 
+Currently implemented:
+- ✅ **weather** - Current weather from Open-Meteo API
+- ✅ **weather-forecast** - Weather forecast
 
-### Run as a service on Ubuntu (systemd + autostart)
-This is a minimal, production-ish setup that serves the built frontend from the Node backend and auto-starts on boot.
+Coming soon (being migrated):
+- 🚧 **rss-feed** - RSS feed reader
+- 🚧 **system-stats** - System CPU/memory stats
+- 🚧 **project-status** - Git project information
+- 🚧 **status** - Custom status values
+- 🚧 **links-list** - Quick links
+- 🚧 **calendar-ics** - ICS calendar events
+- 🚧 **email** - Email inbox
+- 🚧 **youtube-subscriptions** - YouTube feed
+- 🚧 **transit-incidents** - Transit information
+- 🚧 **aqi** - Air quality index
 
-1) Prepare a directory and a system user
-- sudo mkdir -p /opt/todash
-- sudo chown -R $USER:$USER /opt/todash
-- git clone your repo into /opt/todash (or copy files there)
+## Features
 
-2) Install deps and build the frontend
-- cd /opt/todash
-- npm ci
-- npm run build
+### Edit Mode
+- Click the lock icon to enable edit mode
+- Drag widgets to reposition
+- Resize widgets using handles
+- Changes are automatically saved
 
-3) Create a system user (optional but recommended)
-- sudo useradd -r -s /usr/sbin/nologin todash || true
-- sudo chown -R todash:todash /opt/todash
+### Dashboard Switching
+- Use the dropdown to switch between dashboards
+- Dashboards are loaded from YAML files in `dashboards/`
 
-4) Create a systemd unit file
-- sudo tee /etc/systemd/system/todash.service >/dev/null <<'UNIT'
-[Unit]
-Description=Todash Dashboard
-After=network.target
+### Auto-refresh
+- Widgets automatically refresh based on their configuration
+- Manual refresh available via reload button
 
-[Service]
-Type=simple
-User=todash
-Group=todash
-WorkingDirectory=/opt/todash
-# Serve built frontend from Express
-Environment=NODE_ENV=production
-Environment=SERVE_WEB=true
-# Change if you want a different port
-Environment=PORT=4000
-# Optional: enable extra logging for Pi-hole integration
-# Environment=DEBUG_PIHOLE=1
-ExecStart=/usr/bin/node server/src/index.js
-Restart=always
-RestartSec=10
-# Increase file limits if needed
-LimitNOFILE=65535
+### Theming
+- Dark mode with animated nebula background
+- Customizable via MUI theme
 
-[Install]
-WantedBy=multi-user.target
-UNIT
+## Environment Variables
 
-5) Enable and start the service
-- sudo systemctl daemon-reload
-- sudo systemctl enable todash
-- sudo systemctl start todash
-- Check status: sudo systemctl status todash
-- Tail logs: sudo journalctl -u todash -f
+- `PORT` - Server port (default: 4000)
+- `DASHBOARDS_DIR` - Path to dashboards directory (default: ./dashboards)
+- `SERVE_WEB` - Serve built frontend from Express (default: false in dev, true in prod)
+- `CACHE_TTL_MS` - Default cache TTL in milliseconds (default: 5 minutes)
+- `SECRETS_FILE` - Path to JSON file with secrets (optional)
 
-6) Access
-- Backend: http://<server-ip>:4000
-- Frontend is served by the backend at the same URL when SERVE_WEB=true
+## Development
 
-Notes
-- If you deploy updates: pull changes, run npm ci (if package.json changed) and npm run build, then sudo systemctl restart todash
-- For development, keep using: npm run dev (separate Vite + backend). For service mode, use the build + SERVE_WEB=true approach above.
+### Type Checking
+```bash
+npm run type-check
+```
+
+### Linting
+```bash
+npm run lint
+```
+
+### Building
+```bash
+npm run build
+```
+
+## Production Deployment
+
+### Option 1: Systemd Service (Linux)
+
+See [README.md](./README.md) for systemd setup instructions.
+
+### Option 2: Docker (Coming Soon)
+
+```bash
+docker build -t todash .
+docker run -p 4000:4000 -v ./dashboards:/app/dashboards todash
+```
+
+### Option 3: Manual
+
+```bash
+npm ci
+npm run build
+NODE_ENV=production npm start
+```
+
+## Migration Status
+
+This is the new unified architecture. The old `server/` and `web/` directories are being phased out.
+
+**Current status:**
+- ✅ Core infrastructure complete
+- ✅ TypeScript configuration
+- ✅ Build system
+- ✅ Core React components
+- ✅ Plugin system
+- ✅ Weather plugin (example)
+- 🚧 Migrating remaining plugins
+
+## Documentation
+
+- [MIGRATION_PLAN.md](./MIGRATION_PLAN.md) - Migration strategy and progress
+- [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md) - Complete developer reference
+- [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md) - Architecture overview
+
+## License
+
+MIT
+
+## Contributing
+
+Contributions welcome! Please see [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md) for development setup.
