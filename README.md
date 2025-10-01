@@ -34,6 +34,33 @@ npm run build  # Build both frontend and backend
 npm start      # Start production server on port 4000
 ```
 
+### Production Deployment (systemd)
+
+For production deployment with systemd service:
+
+**1. Initial setup:**
+```bash
+# Create systemd service file at /etc/systemd/system/todash.service
+# See server/todash.service for example configuration
+
+sudo systemctl daemon-reload
+sudo systemctl enable todash
+sudo systemctl start todash
+```
+
+**2. Update deployed service:**
+```bash
+# Use the update script to pull changes, build, and restart
+./update-service.sh
+```
+
+The update script performs:
+- `git pull` - Pull latest changes
+- `npm run build` - Build the application
+- `sudo chown -R todash:users .` - Fix file permissions
+- `sudo systemctl restart todash` - Restart the service
+- Verify service is running and show status
+
 ## Project Structure
 
 ```
