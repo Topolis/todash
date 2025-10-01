@@ -82,20 +82,38 @@ registerValueFunction('sensor', async ({ name, input = 'temp1_input', divisor = 
     const path = await import('path');
     const hwmonPath = '/sys/class/hwmon';
 
+    // Check if hwmon exists
+    try {
+      await fs.access(hwmonPath);
+    } catch (e) {
+      console.warn(`[sensor] hwmon not available at ${hwmonPath}`);
+      return null;
+    }
+
     const dirs = await fs.readdir(hwmonPath);
     for (const dir of dirs) {
       try {
         const namePath = path.join(hwmonPath, dir, 'name');
         const sensorName = (await fs.readFile(namePath, 'utf8')).trim();
 
-        // Check if this is the sensor we're looking for
-        if (name && sensorName.toLowerCase().includes(name.toLowerCase())) {
-          const inputPath = path.join(hwmonPath, dir, input);
-          const rawValue = await fs.readFile(inputPath, 'utf8');
-          const value = parseInt(rawValue.trim()) / divisor;
+        // Check if this is the sensor we're looking for (case-insensitive partial match)
+        const nameMatch = name.toLowerCase();
+        const sensorNameLower = sensorName.toLowerCase();
 
-          if (!isNaN(value)) {
-            return Math.round(value * 10) / 10;
+        if (sensorNameLower.includes(nameMatch) || nameMatch.includes(sensorNameLower)) {
+          const inputPath = path.join(hwmonPath, dir, input);
+
+          try {
+            const rawValue = await fs.readFile(inputPath, 'utf8');
+            const value = parseInt(rawValue.trim()) / divisor;
+
+            if (!isNaN(value)) {
+              const result = Math.round(value * 10) / 10;
+              console.log(`[sensor] Found ${name} -> ${sensorName}: ${result} (from ${inputPath})`);
+              return result;
+            }
+          } catch (e) {
+            console.warn(`[sensor] Could not read ${inputPath}:`, (e as Error).message);
           }
         }
       } catch (e) {
@@ -103,8 +121,9 @@ registerValueFunction('sensor', async ({ name, input = 'temp1_input', divisor = 
         continue;
       }
     }
+    console.warn(`[sensor] Sensor not found: "${name}" (input: ${input})`);
   } catch (e) {
-    // hwmon not available
+    console.error(`[sensor] Error reading hwmon:`, e);
   }
   return null;
 });
