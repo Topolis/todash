@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { Box, Button, Snackbar, Alert } from '@mui/material';
-import type { WidgetConfig } from '@types/dashboard';
+import type { PanelConfig } from '@types/panel';
 
 export interface SaveLayoutBarProps {
   name: string;
-  widgets: WidgetConfig[];
+  widgets: PanelConfig[]; // Now accepts panels (kept name for backward compat)
 }
 
 export default function SaveLayoutBar({ name, widgets }: SaveLayoutBarProps) {
@@ -24,7 +24,7 @@ export default function SaveLayoutBar({ name, widgets }: SaveLayoutBarProps) {
       const res = await fetch(`${apiBase}/api/layout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, widgets }),
+        body: JSON.stringify({ name, panels: widgets }), // Send as panels
       });
 
       const text = await res.text();

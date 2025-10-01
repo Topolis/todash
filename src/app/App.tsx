@@ -16,10 +16,11 @@ import {
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import LockIcon from '@mui/icons-material/Lock';
 import DashboardGrid from './components/DashboardGrid';
-import WidgetRenderer from './components/WidgetRenderer';
+import PanelRenderer from './components/PanelRenderer';
 import SaveLayoutBar from './components/SaveLayoutBar';
 import { DashboardSettingsContext } from './components/DashboardSettingsContext';
-import type { DashboardConfig, WidgetConfig } from '@types/dashboard';
+import type { DashboardConfig } from '@types/dashboard';
+import type { PanelConfig } from '@types/panel';
 
 const theme = createTheme({
   palette: {
@@ -35,7 +36,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [available, setAvailable] = useState<string[]>([]);
   const [edit, setEdit] = useState(false);
-  const [layout, setLayout] = useState<WidgetConfig[] | null>(null);
+  const [layout, setLayout] = useState<PanelConfig[] | null>(null);
   const [name, setName] = useState('sample');
 
   useEffect(() => {
@@ -51,7 +52,7 @@ export default function App() {
       .then((r) => r.json())
       .then((cfg) => {
         setDashboard(cfg.config);
-        setLayout(cfg.config.widgets || []);
+        setLayout(cfg.config.panels || []);
       })
       .catch((e) => setError((e as Error).message));
   }, []);
@@ -175,40 +176,61 @@ export default function App() {
               gap={gridSpec.gap}
               rowHeight={gridSpec.rowHeight}
             >
-              {layout.map((w, idx) => {
-                const persistWidgetProps = (updater: any) => {
+              {layout.map((panel, idx) => {
+                const persistPanelProps = (widgetIndex: number, updater: any) => {
                   setLayout((prev) => {
                     if (!prev) return prev;
-                    const newLayout = prev.map((it, i) => {
-                      if (i !== idx) return it;
-                      const oldProps = it.props || {};
-                      const nextProps =
-                        typeof updater === 'function'
-                          ? updater(oldProps)
-                          : { ...oldProps, ...updater };
-                      return { ...it, props: nextProps };
+                    const newLayout = prev.map((p, i) => {
+                      if (i !== idx) return p;
+
+                      // Handle single panel
+                      if (p.panelType === 'single') {
+                        const oldProps = p.widget.props || {};
+                        const nextProps =
+                          typeof updater === 'function'
+                            ? updater(oldProps)
+                            : { ...oldProps, ...updater };
+                        return { ...p, widget: { ...p.widget, props: nextProps } };
+                      }
+
+                      // Handle tabbed panel
+                      if (p.panelType === 'tabbed') {
+                        const newWidgets = p.widgets.map((w, wIdx) => {
+                          if (wIdx !== widgetIndex) return w;
+                          const oldProps = w.props || {};
+                          const nextProps =
+                            typeof updater === 'function'
+                              ? updater(oldProps)
+                              : { ...oldProps, ...updater };
+                          return { ...w, props: nextProps };
+                        });
+                        return { ...p, widgets: newWidgets };
+                      }
+
+                      return p;
                     });
                     persistLayout(newLayout);
                     return newLayout;
                   });
                 };
+
                 return (
-                  <WidgetRenderer
+                  <PanelRenderer
                     key={idx}
-                    widget={w}
+                    panel={panel}
                     editMode={edit}
-                    onChange={(nw) =>
-                      setLayout((prev) => (prev ? prev.map((it, i) => (i === idx ? nw : it)) : prev))
+                    onChange={(np) =>
+                      setLayout((prev) => (prev ? prev.map((it, i) => (i === idx ? np : it)) : prev))
                     }
-                    onDragEnd={(nw) => {
+                    onDragEnd={(np) => {
                       setLayout((prev) => {
                         if (!prev) return prev;
-                        const newLayout = prev.map((it, i) => (i === idx ? nw : it));
+                        const newLayout = prev.map((it, i) => (i === idx ? np : it));
                         persistLayout(newLayout);
                         return newLayout;
                       });
                     }}
-                    onChangePropsPersist={persistWidgetProps}
+                    onChangePropsPersist={persistPanelProps}
                   />
                 );
               })}

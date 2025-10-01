@@ -162,10 +162,10 @@ router.post('/widget/:type', async (req: Request, res: Response) => {
  * Save dashboard layout
  */
 router.post('/layout', async (req: Request, res: Response) => {
-  const { name, widgets } = req.body;
+  const { name, panels } = req.body;
 
-  if (!name || !Array.isArray(widgets)) {
-    return res.status(400).json({ error: 'Invalid request: name and widgets required' });
+  if (!name || !Array.isArray(panels)) {
+    return res.status(400).json({ error: 'Invalid request: name and panels required' });
   }
 
   try {
@@ -184,12 +184,12 @@ router.post('/layout', async (req: Request, res: Response) => {
     } catch {
       // If file doesn't exist, create a new config
       config = {
-        widgets: [],
+        panels: [],
       };
     }
 
-    // Update widgets
-    config.widgets = widgets;
+    // Update panels
+    config.panels = panels;
 
     // Write to file
     const yamlContent = yaml.dump(config);
