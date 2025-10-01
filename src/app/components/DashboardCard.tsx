@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { Card, CardHeader, CardContent, IconButton, Tooltip, SxProps, Theme } from '@mui/material';
+import { Card, CardHeader, CardContent, IconButton, Tooltip, SxProps, Theme, Box } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 
 export interface DashboardCardProps {
@@ -9,6 +9,7 @@ export interface DashboardCardProps {
   children?: ReactNode;
   onReload?: () => void;
   actions?: ReactNode;
+  customHeader?: ReactNode;
 }
 
 export default function DashboardCard({
@@ -18,6 +19,7 @@ export default function DashboardCard({
   children,
   onReload,
   actions,
+  customHeader,
 }: DashboardCardProps) {
   const actionsNode = (
     <>
@@ -34,15 +36,21 @@ export default function DashboardCard({
 
   return (
     <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', ...sx }}>
-      {(title || actions || onReload) && (
-        <CardHeader
-          title={title}
-          subheader={subtitle}
-          action={actionsNode}
-          sx={{ pb: 0 }}
-          titleTypographyProps={{ variant: 'subtitle2', sx: { color: 'rgba(200,210,230,0.85)' } }}
-          subheaderTypographyProps={{ variant: 'caption', sx: { color: 'rgba(200,210,230,0.6)' } }}
-        />
+      {customHeader ? (
+        <Box sx={{ px: 2, pt: 1.5, pb: 0 }}>
+          {customHeader}
+        </Box>
+      ) : (
+        (title || actions || onReload) && (
+          <CardHeader
+            title={title}
+            subheader={subtitle}
+            action={actionsNode}
+            sx={{ pb: 0 }}
+            titleTypographyProps={{ variant: 'subtitle2', sx: { color: 'rgba(200,210,230,0.85)' } }}
+            subheaderTypographyProps={{ variant: 'caption', sx: { color: 'rgba(200,210,230,0.6)' } }}
+          />
+        )
       )}
       <CardContent sx={{ flexGrow: 1, minHeight: 0, overflow: 'auto' }}>
         {children}

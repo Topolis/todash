@@ -61,13 +61,13 @@ export interface DashboardSettings {
 export interface DashboardConfig {
   // Dashboard name/identifier
   name?: string;
-  
+
   // Grid layout configuration
   grid?: GridConfig;
-  
-  // List of widgets
-  widgets: WidgetConfig[];
-  
+
+  // List of panels
+  panels?: any[]; // Import from panel.ts to avoid circular dependency
+
   // Dashboard-wide settings
   settings?: DashboardSettings;
 }

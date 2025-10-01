@@ -4,7 +4,7 @@
 
 export const dashboardSchema = {
   type: 'object',
-  required: ['widgets'],
+  required: ['panels'],
   additionalProperties: false,
   properties: {
     title: { type: 'string' },
@@ -32,22 +32,23 @@ export const dashboardSchema = {
         rowHeight: { type: 'integer', minimum: 10 },
       },
     },
-    widgets: {
+    // Panels format
+    panels: {
       type: 'array',
       items: {
         type: 'object',
-        required: ['type'],
+        required: ['panelType'],
         additionalProperties: true,
         properties: {
-          type: { type: 'string' },
-          title: { type: 'string' },
-          subtitle: { type: 'string' },
+          panelType: { type: 'string', enum: ['single', 'tabbed', 'stacked', 'grid'] },
           x: { type: 'integer', minimum: 1 },
           y: { type: 'integer', minimum: 1 },
           w: { type: 'integer', minimum: 1 },
           h: { type: 'integer', minimum: 1 },
-          refreshSeconds: { type: 'integer', minimum: 0 },
-          props: { type: 'object' },
+          // Additional properties validated based on panelType
+          widget: { type: 'object' },
+          widgets: { type: 'array' },
+          defaultTab: { type: 'integer', minimum: 0 },
         },
       },
     },
