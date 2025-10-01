@@ -115,7 +115,12 @@ async function getSummary(baseUrl: string, token?: string, apiPath?: string): Pr
     const key = `${String(baseUrl || '')}|${token || ''}|${apiPath || ''}`;
     const now = Date.now();
     const cached = summaryCache.get(key);
-    if (cached && cached.expiresAt > now) return cached.data;
+    if (cached && cached.expiresAt > now) {
+      console.log('[Pi-hole] Using cached summary data');
+      return cached.data;
+    }
+
+    console.log(`[Pi-hole] Fetching summary from ${baseUrl} (apiPath: ${apiPath})`);
 
     const paramCombos = [
       { summaryRaw: 1, auth: token, apiPath },
@@ -127,19 +132,22 @@ async function getSummary(baseUrl: string, token?: string, apiPath?: string): Pr
     let lastErr: Error | null = null;
     for (const params of paramCombos) {
       const candidates = buildCandidates(baseUrl, params);
+      console.log(`[Pi-hole] Trying candidates:`, candidates);
       try {
         const json = await fetchJsonFromCandidates(candidates);
-        if (DEBUG) console.log('[Pi-hole] summary OK via', candidates[0]);
+        console.log('[Pi-hole] Summary OK via', candidates[0], 'Data keys:', Object.keys(json));
         summaryCache.set(key, { data: json, expiresAt: now + SUMMARY_TTL_MS });
         return json;
       } catch (e) {
         lastErr = e as Error;
+        console.warn(`[Pi-hole] Failed to fetch from candidates:`, (e as Error).message);
         continue;
       }
     }
-    if (DEBUG) console.warn('[Pi-hole] summary failed for all candidates', baseUrl, lastErr?.message);
+    console.error('[Pi-hole] Summary failed for all candidates', baseUrl, lastErr?.message);
     return {};
   } catch (e) {
+    console.error('[Pi-hole] Error in getSummary:', e);
     return {};
   }
 }
@@ -186,44 +194,67 @@ async function getStatus(baseUrl: string, token?: string, apiPath?: string): Pro
 // Register all Pi-hole value functions
 
 registerValueFunction('pihole-ads-blocked-today', async ({ baseUrl, token, apiPath }) => {
+  console.log('[Pi-hole] pihole-ads-blocked-today called with:', { baseUrl, token: token ? '***' : undefined, apiPath });
   const s = await getSummary(baseUrl, token, apiPath);
-  return numify(s?.ads_blocked_today);
+  const result = numify(s?.ads_blocked_today);
+  console.log('[Pi-hole] pihole-ads-blocked-today result:', result, 'from data:', s?.ads_blocked_today);
+  return result;
 });
 
 registerValueFunction('pihole-dns-queries-today', async ({ baseUrl, token, apiPath }) => {
   const s = await getSummary(baseUrl, token, apiPath);
-  return numify(s?.dns_queries_today);
+  const result = numify(s?.dns_queries_today);
+  console.log('[Pi-hole] pihole-dns-queries-today result:', result);
+  return result;
 });
 
 registerValueFunction('pihole-ads-percentage-today', async ({ baseUrl, token, apiPath }) => {
   const s = await getSummary(baseUrl, token, apiPath);
-  return Math.round(numify(s?.ads_percentage_today));
+  const result = Math.round(numify(s?.ads_percentage_today));
+  console.log('[Pi-hole] pihole-ads-percentage-today result:', result);
+  return result;
 });
 
 registerValueFunction('pihole-domains-being-blocked', async ({ baseUrl, token, apiPath }) => {
   const s = await getSummary(baseUrl, token, apiPath);
-  return numify(s?.domains_being_blocked);
+  const result = numify(s?.domains_being_blocked);
+  console.log('[Pi-hole] pihole-domains-being-blocked result:', result);
+  return result;
 });
 
 registerValueFunction('pihole-unique-clients', async ({ baseUrl, token, apiPath }) => {
   const s = await getSummary(baseUrl, token, apiPath);
-  return numify(s?.unique_clients);
+  const result = numify(s?.unique_clients);
+  console.log('[Pi-hole] pihole-unique-clients result:', result);
+  return result;
 });
 
 registerValueFunction('pihole-queries-forwarded', async ({ baseUrl, token, apiPath }) => {
   const s = await getSummary(baseUrl, token, apiPath);
-  return numify(s?.queries_forwarded);
+  const result = numify(s?.queries_forwarded);
+  console.log('[Pi-hole] pihole-queries-forwarded result:', result);
+  return result;
 });
 
 registerValueFunction('pihole-queries-cached', async ({ baseUrl, token, apiPath }) => {
   const s = await getSummary(baseUrl, token, apiPath);
-  return numify(s?.queries_cached);
+  const result = numify(s?.queries_cached);
+  console.log('[Pi-hole] pihole-queries-cached result:', result);
+  return result;
 });
 
 registerValueFunction('pihole-status-enabled', async ({ baseUrl, token, apiPath }) => {
+  console.log('[Pi-hole] pihole-status-enabled called with:', { baseUrl, token: token ? '***' : undefined, apiPath });
   // Prefer summary.status to avoid another call
   const s = await getSummary(baseUrl, token, apiPath);
-  if (s && typeof s.status === 'string') return /enabled/i.test(s.status) ? 1 : 0;
-  return await getStatus(baseUrl, token, apiPath); // fallback
+  if (s && typeof s.status === 'string') {
+    const result = /enabled/i.test(s.status) ? 'Enabled' : 'Disabled';
+    console.log('[Pi-hole] pihole-status-enabled result from summary:', result);
+    return result;
+  }
+  const val = await getStatus(baseUrl, token, apiPath);
+  const result = val === 1 ? 'Enabled' : 'Disabled';
+  console.log('[Pi-hole] pihole-status-enabled result from status:', result);
+  return result;
 });
 
