@@ -15,7 +15,8 @@ import { fetchYouTubeData } from '@plugins/youtube/data';
 import { fetchTransitData } from '@plugins/transit/data';
 import { fetchAQIData } from '@plugins/aqi/data';
 // Import pi-hole value functions (no data provider, just value functions)
-import '@plugins/pihole/data';
+// Using v6 API for Pi-hole v6+
+import '@plugins/pihole/data-v6';
 
 export function registerServerPlugins() {
   // Register plugins with their data providers
