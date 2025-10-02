@@ -112,7 +112,7 @@ export default function App() {
       `}</style>
 
       {/* Wallpaper layer */}
-      <WallpaperRenderer config={dashboard?.wallpaper} />
+      <WallpaperRenderer config={dashboard?.wallpaper} settings={dashboard?.settings} />
 
       <Container maxWidth="xl" sx={{ py: 2, position: 'relative', zIndex: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 2 }}>

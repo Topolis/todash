@@ -133,10 +133,19 @@ widgets:
 
 ### Configuration Options
 
+**Settings:**
+- `dateFormat`: Date format string (e.g., "YYYY-MM-DD HH:mm")
+- `apiKeys`: API keys for external services
+  - `unsplash`: Unsplash API key for photo wallpapers
+
 **Grid:**
 - `columns`: Number of columns (default: 12)
 - `gap`: Gap between widgets in pixels (default: 12)
 - `rowHeight`: Height of each row in pixels (default: 120)
+
+**Wallpaper:**
+- `type`: Wallpaper type (`nebula`, `waves`, `unsplash`)
+- `props`: Wallpaper-specific configuration (see [Wallpapers README](src/wallpapers/README.md))
 
 **Widget:**
 - `type`: Widget type (must match registered plugin name)
@@ -146,6 +155,30 @@ widgets:
 - `w`, `h`: Widget size in grid units
 - `refreshSeconds`: Auto-refresh interval (optional)
 - `props`: Widget-specific configuration
+
+### Wallpapers
+
+Todash supports animated wallpapers for dashboard backgrounds. See [src/wallpapers/README.md](src/wallpapers/README.md) for details.
+
+**Available wallpapers:**
+- `nebula`: Animated cosmic nebula effect
+- `waves`: Smooth animated wave layers
+- `unsplash`: Random photos from Unsplash API
+
+**Example with Unsplash:**
+```yaml
+settings:
+  apiKeys:
+    unsplash: YOUR_UNSPLASH_API_KEY
+
+wallpaper:
+  type: unsplash
+  props:
+    query: nature
+    orientation: landscape
+    changeInterval: 300
+    darken: 0.2
+```
 
 ## Creating a New Plugin
 
