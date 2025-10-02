@@ -53,6 +53,7 @@ Smooth, rounded wave shapes with parallax scrolling effect.
 **Type:** `waves`
 
 **Props:**
+- `baseBackground` (string): CSS gradient for the base background layer. Default: dark blue gradient
 - `colors` (string[]): Array of RGBA color strings for the wave layers (back to front). Default: dark blue gradient
 - `speed` (number): Base animation speed in seconds. Each layer moves at a different speed for parallax. Higher = slower. Default: 40
 - `opacity` (number): Overall opacity of the wallpaper (0-1). Default: 1
@@ -62,14 +63,63 @@ Smooth, rounded wave shapes with parallax scrolling effect.
 wallpaper:
   type: waves
   props:
+    baseBackground: 'linear-gradient(180deg, rgba(45, 24, 16, 1) 0%, rgba(26, 14, 8, 1) 100%)'
     colors:
-      - rgba(20, 30, 48, 0.9)
-      - rgba(36, 59, 85, 0.8)
-      - rgba(52, 88, 122, 0.7)
-      - rgba(68, 117, 159, 0.6)
-    speed: 30
+      - rgba(240, 100, 73, 0.85)
+      - rgba(235, 77, 100, 0.85)
+      - rgba(220, 68, 146, 0.85)
+      - rgba(145, 70, 160, 0.85)
+    speed: 35
     opacity: 1
 ```
+
+### Unsplash
+
+Displays random photos from Unsplash API with automatic rotation and smooth transitions.
+
+**Type:** `unsplash`
+
+**Props:**
+- `apiKey` (string): Unsplash API key. Can be set in dashboard settings under `settings.apiKeys.unsplash`
+- `query` (string): Search query for photos (e.g., "nature", "architecture", "minimal"). Optional
+- `collections` (string): Comma-separated Unsplash collection IDs. Optional
+- `orientation` (string): Photo orientation - "landscape", "portrait", or "squarish". Default: "landscape"
+- `featured` (boolean): Only show featured/curated photos. Default: false
+- `changeInterval` (number): Seconds between photo changes. Default: 300 (5 minutes)
+- `transitionDuration` (number): Transition animation duration in seconds. Default: 2
+- `opacity` (number): Overall opacity of the wallpaper (0-1). Default: 1
+- `blur` (number): Blur amount in pixels. Default: 0
+- `darken` (number): Darken amount (0-1). 0 = no darkening, 1 = completely black. Default: 0
+
+**Setup:**
+1. Get a free API key from https://unsplash.com/developers:
+   - Create an Unsplash account (if you don't have one)
+   - Go to https://unsplash.com/oauth/applications
+   - Click "New Application"
+   - Accept the terms and create your app
+   - Copy the "Access Key" (this is your API key)
+   - Demo mode allows 50 requests/hour, which is sufficient for most dashboards
+2. Add to your dashboard settings:
+```yaml
+settings:
+  apiKeys:
+    unsplash: YOUR_UNSPLASH_ACCESS_KEY_HERE
+```
+
+**Example:**
+```yaml
+wallpaper:
+  type: unsplash
+  props:
+    query: nature
+    orientation: landscape
+    featured: true
+    changeInterval: 300
+    transitionDuration: 2
+    darken: 0.2
+```
+
+**Note:** Attribution is automatically displayed in the bottom-right corner as required by Unsplash API guidelines.
 
 ## Creating New Wallpapers
 

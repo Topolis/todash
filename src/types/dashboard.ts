@@ -51,6 +51,12 @@ export interface DashboardSettings {
     longitude: number;
   };
 
+  // API keys for external services
+  apiKeys?: {
+    unsplash?: string;
+    [key: string]: string | undefined;
+  };
+
   // Additional settings
   [key: string]: any;
 }
