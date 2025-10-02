@@ -6,6 +6,7 @@ import Ajv from 'ajv';
 import { dashboardSchema } from './schema';
 import { getPlugin } from '@plugins/index';
 import { evaluateValueFunction } from './valueFunctions';
+import { logger } from '../lib/logger';
 import type { DashboardConfig } from '@types/dashboard';
 import type { WidgetDataRequest, WidgetDataResponse } from '@types/api';
 
@@ -203,10 +204,36 @@ router.post('/layout', async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/logs
+ * Get application logs
+ */
+router.get('/logs', (_req: Request, res: Response) => {
+  try {
+    const logs = logger.getLogs();
+    res.json({ logs });
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+/**
+ * DELETE /api/logs
+ * Clear application logs
+ */
+router.delete('/logs', (_req: Request, res: Response) => {
+  try {
+    logger.clearLogs();
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+/**
  * Error handler
  */
 router.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('API Error:', err);
+  logger.error('API', 'API Error', err);
   res.status(500).json({ error: err.message });
 });
 

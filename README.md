@@ -9,6 +9,7 @@ Todash is a modern, extensible dashboard application built with:
 - **React + MUI**: Modern UI components and theming
 - **Express**: Backend API server
 - **Plugin system**: Easy to extend with new widget types
+- **Centralized logging**: Built-in log viewer for easy debugging
 
 ## Quick Start
 
@@ -179,6 +180,19 @@ wallpaper:
     changeInterval: 300
     darken: 0.2
 ```
+
+## Debugging with the Log Viewer
+
+Todash includes a built-in log viewer for easy debugging. Click the bug icon (🐛) in the top-left corner to open it.
+
+**Features:**
+- View all client and server logs in one place
+- Filter by log level (debug, info, warn, error)
+- Search logs by text
+- Auto-scroll to newest logs
+- Clear logs or refresh manually
+
+See [docs/LOGGING.md](docs/LOGGING.md) for detailed documentation on using the logging system.
 
 ## Creating a New Plugin
 

@@ -1,4 +1,5 @@
 import { registerValueFunction } from '@server/valueFunctions';
+import { logger } from '../../lib/logger';
 
 /**
  * System stats plugin configuration
@@ -113,7 +114,7 @@ registerValueFunction('sensor', async ({ name, input = 'temp1_input', divisor = 
               return result;
             }
           } catch (e) {
-            console.warn(`[sensor] Could not read ${inputPath}:`, (e as Error).message);
+            logger.warn('sensor', `Could not read ${inputPath}`, (e as Error).message);
           }
         }
       } catch (e) {
@@ -121,9 +122,9 @@ registerValueFunction('sensor', async ({ name, input = 'temp1_input', divisor = 
         continue;
       }
     }
-    console.warn(`[sensor] Sensor not found: "${name}" (input: ${input})`);
+    logger.warn('sensor', `Sensor not found: "${name}" (input: ${input})`);
   } catch (e) {
-    console.error(`[sensor] Error reading hwmon:`, e);
+    logger.error('sensor', 'Error reading hwmon', e);
   }
   return null;
 });

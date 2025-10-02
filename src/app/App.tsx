@@ -15,12 +15,15 @@ import {
 } from '@mui/material';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import LockIcon from '@mui/icons-material/Lock';
+import BugReportIcon from '@mui/icons-material/BugReport';
 import DashboardGrid from './components/DashboardGrid';
 import PanelRenderer from './components/PanelRenderer';
 import SaveLayoutBar from './components/SaveLayoutBar';
+import LogViewerDialog from './components/LogViewerDialog';
 import { DashboardSettingsContext } from './components/DashboardSettingsContext';
 import { DashboardThemeContext } from './components/DashboardThemeContext';
 import { WallpaperRenderer } from '../wallpapers';
+import { logger } from '../lib/logger';
 import type { DashboardConfig } from '@types/dashboard';
 import type { PanelConfig } from '@types/panel';
 
@@ -40,23 +43,38 @@ export default function App() {
   const [edit, setEdit] = useState(false);
   const [layout, setLayout] = useState<PanelConfig[] | null>(null);
   const [name, setName] = useState('sample');
+  const [logViewerOpen, setLogViewerOpen] = useState(false);
 
   useEffect(() => {
+    logger.info('App', 'Application starting');
+
     // Load available dashboards and then the selected one
     fetch('/api/dashboards')
       .then((r) => r.json())
-      .then(({ dashboards }) => setAvailable(dashboards || []));
+      .then(({ dashboards }) => {
+        logger.info('App', `Loaded ${dashboards?.length || 0} available dashboards`);
+        setAvailable(dashboards || []);
+      })
+      .catch((e) => {
+        logger.error('App', 'Failed to load available dashboards', e);
+      });
 
     const params = new URLSearchParams(window.location.search);
     const n = params.get('dashboard') || 'sample';
     setName(n);
+    logger.info('App', `Loading dashboard: ${n}`);
+
     fetch(`/api/dashboards/${encodeURIComponent(n)}`)
       .then((r) => r.json())
       .then((cfg) => {
+        logger.info('App', `Dashboard loaded: ${cfg.config?.title || n}`);
         setDashboard(cfg.config);
         setLayout(cfg.config.panels || []);
       })
-      .catch((e) => setError((e as Error).message));
+      .catch((e) => {
+        logger.error('App', `Failed to load dashboard: ${n}`, e);
+        setError((e as Error).message);
+      });
   }, []);
 
   const gridSpec = useMemo(
@@ -125,6 +143,17 @@ export default function App() {
               {edit ? <LockOpenIcon /> : <LockIcon />}
             </IconButton>
           </Tooltip>
+
+          <Tooltip title="View application logs">
+            <IconButton
+              onClick={() => setLogViewerOpen(true)}
+              color="default"
+              aria-label="view-logs"
+            >
+              <BugReportIcon />
+            </IconButton>
+          </Tooltip>
+
           <Typography variant="h5" sx={{ flexGrow: 1 }}>
             {dashboard?.name || 'Dashboard'}
           </Typography>
@@ -224,6 +253,9 @@ export default function App() {
           </DashboardSettingsContext.Provider>
         )}
       </Container>
+
+      {/* Log Viewer Dialog */}
+      <LogViewerDialog open={logViewerOpen} onClose={() => setLogViewerOpen(false)} />
     </ThemeProvider>
   );
 }
