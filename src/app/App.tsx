@@ -19,6 +19,8 @@ import DashboardGrid from './components/DashboardGrid';
 import PanelRenderer from './components/PanelRenderer';
 import SaveLayoutBar from './components/SaveLayoutBar';
 import { DashboardSettingsContext } from './components/DashboardSettingsContext';
+import { DashboardThemeContext } from './components/DashboardThemeContext';
+import { WallpaperRenderer } from '../wallpapers';
 import type { DashboardConfig } from '@types/dashboard';
 import type { PanelConfig } from '@types/panel';
 
@@ -107,29 +109,10 @@ export default function App() {
         *::-webkit-scrollbar-thumb:hover { background-color: #3a4666; }
         /* Firefox */
         * { scrollbar-width: thin; scrollbar-color: #2a3550 #0e1422; }
-
-        /* Animated dark nebula background */
-        .nebula-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
-        .nebula-bg {
-          background:
-            radial-gradient(1000px 700px at 10% 20%, rgba(64, 91, 155, 0.25), transparent 60%),
-            radial-gradient(900px 650px at 85% 15%, rgba(113, 63, 136, 0.22), transparent 60%),
-            radial-gradient(900px 650px at 60% 85%, rgba(38, 90, 102, 0.22), transparent 60%),
-            radial-gradient(800px 600px at 20% 85%, rgba(128, 96, 56, 0.14), transparent 60%),
-            radial-gradient(1400px 1000px at 50% 50%, rgba(11, 15, 25, 0.60), rgba(11, 15, 25, 0.60));
-          filter: saturate(1.1) contrast(1.05);
-          animation: nebulaMove 40s ease-in-out infinite alternate;
-          will-change: background-position;
-        }
-        @keyframes nebulaMove {
-          0%   { background-position: 0% 0%, 100% 0%, 0% 100%, 100% 100%, 50% 50%; }
-          50%  { background-position: 20% 10%, 80% 20%, 20% 80%, 10% 70%, 50% 50%; }
-          100% { background-position: 100% 100%, 0% 100%, 100% 0%, 0% 0%, 50% 50%; }
-        }
       `}</style>
 
-      {/* animated nebula background layer */}
-      <Box className="nebula-bg" />
+      {/* Wallpaper layer */}
+      <WallpaperRenderer config={dashboard?.wallpaper} />
 
       <Container maxWidth="xl" sx={{ py: 2, position: 'relative', zIndex: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 2 }}>
@@ -171,7 +154,8 @@ export default function App() {
         {error && <Typography color="error">{error}</Typography>}
         {dashboard && layout && (
           <DashboardSettingsContext.Provider value={dashboard.settings || {}}>
-            <DashboardGrid
+            <DashboardThemeContext.Provider value={dashboard.theme || {}}>
+              <DashboardGrid
               columns={gridSpec.columns}
               gap={gridSpec.gap}
               rowHeight={gridSpec.rowHeight}
@@ -234,8 +218,9 @@ export default function App() {
                   />
                 );
               })}
-            </DashboardGrid>
-            {edit && <SaveLayoutBar name={name} widgets={layout} />}
+              </DashboardGrid>
+              {edit && <SaveLayoutBar name={name} widgets={layout} />}
+            </DashboardThemeContext.Provider>
           </DashboardSettingsContext.Provider>
         )}
       </Container>

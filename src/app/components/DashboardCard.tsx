@@ -1,6 +1,7 @@
-import React, { ReactNode } from 'react';
-import { Card, CardHeader, CardContent, IconButton, Tooltip, SxProps, Theme, Box } from '@mui/material';
+import React, { ReactNode, useContext } from 'react';
+import { Card, CardHeader, CardContent, IconButton, Tooltip, SxProps, Theme, Box, styled } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import { DashboardThemeContext } from './DashboardThemeContext';
 
 export interface DashboardCardProps {
   title?: string;
@@ -12,6 +13,20 @@ export interface DashboardCardProps {
   customHeader?: ReactNode;
 }
 
+const StyledCard = styled(Card, {
+  shouldForwardProp: (prop) => prop !== 'panelBackground',
+})<{ panelBackground?: string }>(({ theme, panelBackground }) => ({
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  ...(panelBackground && {
+    background: panelBackground,
+    backdropFilter: 'blur(10px)',
+    border: '1px solid rgba(255, 255, 255, 0.05)',
+    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+  }),
+}));
+
 export default function DashboardCard({
   title,
   subtitle,
@@ -21,6 +36,8 @@ export default function DashboardCard({
   actions,
   customHeader,
 }: DashboardCardProps) {
+  const theme = useContext(DashboardThemeContext);
+
   const actionsNode = (
     <>
       {actions}
@@ -35,7 +52,7 @@ export default function DashboardCard({
   );
 
   return (
-    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', ...sx }}>
+    <StyledCard panelBackground={theme.panel?.background} sx={sx}>
       {customHeader ? (
         <Box sx={{ px: 2, pt: 1.5, pb: 0 }}>
           {customHeader}
@@ -55,6 +72,6 @@ export default function DashboardCard({
       <CardContent sx={{ flexGrow: 1, minHeight: 0, overflow: 'auto' }}>
         {children}
       </CardContent>
-    </Card>
+    </StyledCard>
   );
 }

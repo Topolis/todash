@@ -18,6 +18,8 @@ const SESSION_TTL_MS = 25 * 60 * 1000; // 25 minutes (Pi-hole sessions last 30 m
 // Caches
 const summaryCache = new Map<string, { data: any; expiresAt: number }>();
 const sessionCache = new Map<string, { sid: string; csrf: string; expiresAt: number }>();
+// Cache authentication failures to avoid repeated failed attempts (treated as "disabled")
+const authFailureCache = new Map<string, { failed: boolean; expiresAt: number }>();
 
 // HTTPS agent that accepts self-signed certificates
 const httpsAgent = new https.Agent({
@@ -77,6 +79,14 @@ async function getSession(
   try {
     const cacheKey = `${baseUrl}|${password}`;
     const now = Date.now();
+
+    // Check if authentication previously failed
+    const authFailure = authFailureCache.get(cacheKey);
+    if (authFailure && authFailure.expiresAt > now) {
+      if (DEBUG) console.log('[Pi-hole v6] Skipping auth - previous failure cached');
+      return null;
+    }
+
     const cached = sessionCache.get(cacheKey);
 
     if (cached && cached.expiresAt > now) {
@@ -113,10 +123,23 @@ async function getSession(
       return { sid: session.sid, csrf: session.csrf };
     }
 
+    // Cache authentication failure for 5 minutes
     console.error('[Pi-hole v6] Authentication failed:', json);
+    authFailureCache.set(cacheKey, {
+      failed: true,
+      expiresAt: now + 5 * 60 * 1000, // 5 minutes
+    });
     return null;
   } catch (e) {
+    const cacheKey = `${baseUrl}|${password}`;
+    const now = Date.now();
+
+    // Cache authentication error for 5 minutes
     console.error('[Pi-hole v6] Authentication error:', e);
+    authFailureCache.set(cacheKey, {
+      failed: true,
+      expiresAt: now + 5 * 60 * 1000, // 5 minutes
+    });
     return null;
   }
 }

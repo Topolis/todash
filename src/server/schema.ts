@@ -5,7 +5,7 @@
 export const dashboardSchema = {
   type: 'object',
   required: ['panels'],
-  additionalProperties: false,
+  additionalProperties: true,
   properties: {
     title: { type: 'string' },
     settings: {
@@ -23,6 +23,19 @@ export const dashboardSchema = {
         },
       },
     },
+    theme: {
+      type: 'object',
+      additionalProperties: true,
+      properties: {
+        panel: {
+          type: 'object',
+          properties: {
+            opacity: { type: 'number', minimum: 0, maximum: 1 },
+            background: { type: 'string' },
+          },
+        },
+      },
+    },
     grid: {
       type: 'object',
       additionalProperties: false,
@@ -31,6 +44,16 @@ export const dashboardSchema = {
         gap: { type: 'integer', minimum: 0 },
         rowHeight: { type: 'integer', minimum: 10 },
       },
+    },
+    // Wallpaper configuration
+    wallpaper: {
+      type: 'object',
+      additionalProperties: true,
+      properties: {
+        type: { type: 'string' },
+        props: { type: 'object' },
+      },
+      required: ['type'],
     },
     // Panels format
     panels: {
