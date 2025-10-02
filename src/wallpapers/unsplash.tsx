@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Box } from '@mui/material';
+import { logger } from '../lib/logger';
 
 export interface UnsplashWallpaperProps {
   apiKey?: string;
@@ -52,16 +53,25 @@ export default function UnsplashWallpaper({
   const [nextIndex, setNextIndex] = useState(1);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isFetchingRef = useRef(false);
+  const hasStartedRotatingRef = useRef(false);
 
   // Fetch photos from Unsplash API
   const fetchPhotos = useCallback(async () => {
     if (!apiKey) {
       setError('Unsplash API key not configured');
-      console.error('Unsplash: API key not configured');
+      logger.error('Unsplash', 'API key not configured');
       return;
     }
 
-    console.log('Unsplash: Fetching photos with config:', { query, collections, orientation, featured });
+    // Prevent duplicate fetches
+    if (isFetchingRef.current) {
+      logger.debug('Unsplash', 'Fetch already in progress, skipping');
+      return;
+    }
+
+    isFetchingRef.current = true;
+    logger.info('Unsplash', 'Fetching photos', { query, collections, orientation, featured });
 
     try {
       const params = new URLSearchParams({
@@ -92,20 +102,20 @@ export default function UnsplashWallpaper({
       const endpoint = 'https://api.unsplash.com/photos/random';
       const url = `${endpoint}?${params.toString()}`;
 
-      console.log('Unsplash: Fetching from:', url.replace(apiKey, 'API_KEY_HIDDEN'));
+      logger.debug('Unsplash', `Fetching from: ${url.replace(apiKey, 'API_KEY_HIDDEN')}`);
 
       const response = await fetch(url);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Unsplash API error response:', errorText);
+        logger.error('Unsplash', `API error: ${response.status}`, errorText);
         throw new Error(`Unsplash API error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
       const photoArray = Array.isArray(data) ? data : [data];
 
-      console.log('Unsplash: Received', photoArray.length, 'photos');
+      logger.info('Unsplash', `Received ${photoArray.length} photos`);
 
       if (photoArray.length === 0) {
         throw new Error('No photos returned from Unsplash API');
@@ -114,41 +124,60 @@ export default function UnsplashWallpaper({
       setPhotos(photoArray);
       setError(null);
     } catch (err) {
-      console.error('Failed to fetch Unsplash photos:', err);
+      logger.error('Unsplash', 'Failed to fetch photos', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch photos');
+    } finally {
+      isFetchingRef.current = false;
     }
   }, [apiKey, query, collections, orientation, featured]);
 
-  // Initial fetch
+  // Initial fetch - only once on mount
   useEffect(() => {
+    logger.info('Unsplash', 'Component mounted, initiating first fetch');
     fetchPhotos();
-  }, [fetchPhotos]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - only run once on mount
 
   // Rotate photos
   useEffect(() => {
     if (photos.length === 0) return;
 
+    logger.info('Unsplash', `Starting photo rotation (interval: ${changeInterval}s, ${photos.length} photos loaded)`);
+    hasStartedRotatingRef.current = false; // Reset on new photo set
+
     const interval = setInterval(() => {
+      logger.debug('Unsplash', 'Rotating to next photo');
+      hasStartedRotatingRef.current = true; // Mark that we've started rotating
       setIsTransitioning(true);
-      
+
       // After transition starts, update indices
       setTimeout(() => {
-        setCurrentIndex((prev) => (prev + 1) % photos.length);
+        setCurrentIndex((prev) => {
+          const next = (prev + 1) % photos.length;
+          logger.debug('Unsplash', `Photo index: ${prev} → ${next}`);
+          return next;
+        });
         setNextIndex((prev) => (prev + 1) % photos.length);
         setIsTransitioning(false);
       }, transitionDuration * 1000);
     }, changeInterval * 1000);
 
-    return () => clearInterval(interval);
+    return () => {
+      logger.debug('Unsplash', 'Clearing rotation interval');
+      clearInterval(interval);
+    };
   }, [photos.length, changeInterval, transitionDuration]);
 
   // Refetch photos when we've cycled through all
   useEffect(() => {
     if (photos.length === 0) return;
-    
-    if (currentIndex === 0 && currentIndex !== nextIndex) {
+
+    // Only refetch if we've actually started rotating and cycled back to index 0
+    if (hasStartedRotatingRef.current && currentIndex === 0 && nextIndex !== 0) {
       // We've completed a full cycle, fetch new photos
+      logger.info('Unsplash', 'Completed full cycle, fetching new photos');
       fetchPhotos();
+      hasStartedRotatingRef.current = false; // Reset to prevent immediate refetch
     }
   }, [currentIndex, nextIndex, photos.length, fetchPhotos]);
 

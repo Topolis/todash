@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import NebulaWallpaper, { NebulaWallpaperProps } from './nebula';
 import WavesWallpaper, { WavesWallpaperProps } from './waves';
 import UnsplashWallpaper, { UnsplashWallpaperProps } from './unsplash';
@@ -37,25 +37,34 @@ export interface WallpaperRendererProps {
 }
 
 export function WallpaperRenderer({ config, settings }: WallpaperRendererProps) {
+  // Memoize props to prevent unnecessary re-renders
+  const wallpaperProps = useMemo(() => {
+    if (!config) return null;
+
+    // Merge API keys from settings into props for wallpapers that need them
+    const baseProps = config.props || {};
+
+    if (config.type === 'unsplash' && settings?.apiKeys?.unsplash) {
+      return {
+        ...baseProps,
+        apiKey: settings.apiKeys.unsplash,
+      };
+    }
+
+    return baseProps;
+  }, [config, settings?.apiKeys?.unsplash]);
+
   if (!config) {
     return null;
   }
 
-  // Merge API keys from settings into props for wallpapers that need them
-  const propsWithApiKeys = {
-    ...(config.props || {}),
-    ...(config.type === 'unsplash' && settings?.apiKeys?.unsplash
-      ? { apiKey: settings.apiKeys.unsplash }
-      : {}),
-  };
-
   switch (config.type) {
     case 'nebula':
-      return <NebulaWallpaper {...(config.props || {})} />;
+      return <NebulaWallpaper {...wallpaperProps} />;
     case 'waves':
-      return <WavesWallpaper {...(config.props || {})} />;
+      return <WavesWallpaper {...wallpaperProps} />;
     case 'unsplash':
-      return <UnsplashWallpaper {...propsWithApiKeys} />;
+      return <UnsplashWallpaper {...wallpaperProps} />;
     default:
       return null;
   }

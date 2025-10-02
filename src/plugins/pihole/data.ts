@@ -1,17 +1,21 @@
 /**
  * Pi-hole Plugin - Value Functions Only
- * 
+ *
  * This plugin provides value functions for Pi-hole statistics
  * to be used in status widgets. No widget component is provided.
  */
 
 import { registerValueFunction } from '@server/valueFunctions';
+import { logger } from '../../lib/logger';
 
 const DEBUG = process.env.DEBUG_PIHOLE === '1';
 
 // Simple in-memory caches with 60s TTL to avoid overwhelming Pi-hole
 const summaryCache = new Map<string, { data: any; expiresAt: number }>();
 const statusCache = new Map<string, { value: number; expiresAt: number }>();
+// In-flight request tracking to prevent duplicate concurrent fetches
+const summaryInflight = new Map<string, Promise<any>>();
+const statusInflight = new Map<string, Promise<number>>();
 const SUMMARY_TTL_MS = 60000;
 const STATUS_TTL_MS = 60000;
 
@@ -111,43 +115,68 @@ async function fetchTextFromCandidates(candidates: string[]): Promise<string> {
  * Get Pi-hole summary data with caching
  */
 async function getSummary(baseUrl: string, token?: string, apiPath?: string): Promise<any> {
+  const key = `${String(baseUrl || '')}|${token || ''}|${apiPath || ''}`;
+
   try {
-    const key = `${String(baseUrl || '')}|${token || ''}|${apiPath || ''}`;
     const now = Date.now();
     const cached = summaryCache.get(key);
     if (cached && cached.expiresAt > now) {
-      console.log('[Pi-hole] Using cached summary data');
+      logger.debug('Pi-hole', 'Using cached summary data');
       return cached.data;
     }
 
-    console.log(`[Pi-hole] Fetching summary from ${baseUrl} (apiPath: ${apiPath})`);
-
-    const paramCombos = [
-      { summaryRaw: 1, auth: token, apiPath },
-      { summaryRaw: 1, apiPath },
-      { summary: 1, auth: token, apiPath },
-      { summary: 1, apiPath },
-    ];
-
-    let lastErr: Error | null = null;
-    for (const params of paramCombos) {
-      const candidates = buildCandidates(baseUrl, params);
-      console.log(`[Pi-hole] Trying candidates:`, candidates);
-      try {
-        const json = await fetchJsonFromCandidates(candidates);
-        console.log('[Pi-hole] Summary OK via', candidates[0], 'Data keys:', Object.keys(json));
-        summaryCache.set(key, { data: json, expiresAt: now + SUMMARY_TTL_MS });
-        return json;
-      } catch (e) {
-        lastErr = e as Error;
-        console.warn(`[Pi-hole] Failed to fetch from candidates:`, (e as Error).message);
-        continue;
-      }
+    // Check if there's already an in-flight request for this summary
+    const inflight = summaryInflight.get(key);
+    if (inflight) {
+      logger.debug('Pi-hole', 'Waiting for in-flight summary request');
+      return await inflight;
     }
-    console.error('[Pi-hole] Summary failed for all candidates', baseUrl, lastErr?.message);
-    return {};
+
+    logger.debug('Pi-hole', `Fetching summary from ${baseUrl} (apiPath: ${apiPath})`);
+
+    // Create the promise for this request and track it
+    const requestPromise = (async () => {
+      try {
+        const paramCombos = [
+          { summaryRaw: 1, auth: token, apiPath },
+          { summaryRaw: 1, apiPath },
+          { summary: 1, auth: token, apiPath },
+          { summary: 1, apiPath },
+        ];
+
+        let lastErr: Error | null = null;
+        for (const params of paramCombos) {
+          const candidates = buildCandidates(baseUrl, params);
+          logger.debug('Pi-hole', 'Trying candidates', candidates);
+          try {
+            const json = await fetchJsonFromCandidates(candidates);
+            logger.debug('Pi-hole', `Summary OK via ${candidates[0]}`, { keys: Object.keys(json) });
+            summaryCache.set(key, { data: json, expiresAt: Date.now() + SUMMARY_TTL_MS });
+            return json;
+          } catch (e) {
+            lastErr = e as Error;
+            logger.warn('Pi-hole', 'Failed to fetch from candidates', (e as Error).message);
+            continue;
+          }
+        }
+        logger.error('Pi-hole', `Summary failed for all candidates: ${baseUrl}`, lastErr?.message);
+        return {};
+      } catch (e) {
+        logger.error('Pi-hole', 'Error in getSummary', e);
+        return {};
+      } finally {
+        // Remove from in-flight tracking
+        summaryInflight.delete(key);
+      }
+    })();
+
+    // Track this request
+    summaryInflight.set(key, requestPromise);
+    return await requestPromise;
   } catch (e) {
-    console.error('[Pi-hole] Error in getSummary:', e);
+    // Outer catch for any unexpected errors
+    logger.error('Pi-hole', 'Unexpected error in getSummary', e);
+    summaryInflight.delete(key);
     return {};
   }
 }
@@ -156,37 +185,62 @@ async function getSummary(baseUrl: string, token?: string, apiPath?: string): Pr
  * Get Pi-hole status (enabled/disabled) with caching
  */
 async function getStatus(baseUrl: string, token?: string, apiPath?: string): Promise<number> {
+  const key = `${String(baseUrl || '')}|${token || ''}|${apiPath || ''}`;
+
   try {
-    const key = `${String(baseUrl || '')}|${token || ''}|${apiPath || ''}`;
     const now = Date.now();
     const cached = statusCache.get(key);
     if (cached && cached.expiresAt > now) return cached.value;
 
-    const paramCombos = [
-      { status: 1, auth: token, apiPath },
-      { status: 1, apiPath },
-    ];
-    for (const params of paramCombos) {
-      const candidates = buildCandidates(baseUrl, params);
-      try {
-        const text = await fetchTextFromCandidates(candidates);
-        let val: number;
-        try {
-          const j = JSON.parse(text);
-          const s = (j && (j.status || j.enable || j.disabled)) || text;
-          val = /enabled/i.test(String(s)) ? 1 : 0;
-        } catch {
-          val = /enabled/i.test(text) ? 1 : 0;
-        }
-        statusCache.set(key, { value: val, expiresAt: now + STATUS_TTL_MS });
-        return val;
-      } catch {
-        continue;
-      }
+    // Check if there's already an in-flight request for this status
+    const inflight = statusInflight.get(key);
+    if (inflight) {
+      logger.debug('Pi-hole', 'Waiting for in-flight status request');
+      return await inflight;
     }
-    if (DEBUG) console.warn('[Pi-hole] status failed for all candidates', baseUrl);
-    return 0;
+
+    // Create the promise for this request and track it
+    const requestPromise = (async () => {
+      try {
+        const paramCombos = [
+          { status: 1, auth: token, apiPath },
+          { status: 1, apiPath },
+        ];
+        for (const params of paramCombos) {
+          const candidates = buildCandidates(baseUrl, params);
+          try {
+            const text = await fetchTextFromCandidates(candidates);
+            let val: number;
+            try {
+              const j = JSON.parse(text);
+              const s = (j && (j.status || j.enable || j.disabled)) || text;
+              val = /enabled/i.test(String(s)) ? 1 : 0;
+            } catch {
+              val = /enabled/i.test(text) ? 1 : 0;
+            }
+            statusCache.set(key, { value: val, expiresAt: Date.now() + STATUS_TTL_MS });
+            return val;
+          } catch {
+            continue;
+          }
+        }
+        if (DEBUG) logger.warn('Pi-hole', `status failed for all candidates: ${baseUrl}`);
+        return 0;
+      } catch (e) {
+        return 0;
+      } finally {
+        // Remove from in-flight tracking
+        statusInflight.delete(key);
+      }
+    })();
+
+    // Track this request
+    statusInflight.set(key, requestPromise);
+    return await requestPromise;
   } catch (e) {
+    // Outer catch for any unexpected errors
+    logger.error('Pi-hole', 'Unexpected error in getStatus', e);
+    statusInflight.delete(key);
     return 0;
   }
 }
@@ -194,67 +248,67 @@ async function getStatus(baseUrl: string, token?: string, apiPath?: string): Pro
 // Register all Pi-hole value functions
 
 registerValueFunction('pihole-ads-blocked-today', async ({ baseUrl, token, apiPath }) => {
-  console.log('[Pi-hole] pihole-ads-blocked-today called with:', { baseUrl, token: token ? '***' : undefined, apiPath });
+  logger.debug('Pi-hole', 'pihole-ads-blocked-today called', { baseUrl, token: token ? '***' : undefined, apiPath });
   const s = await getSummary(baseUrl, token, apiPath);
   const result = numify(s?.ads_blocked_today);
-  console.log('[Pi-hole] pihole-ads-blocked-today result:', result, 'from data:', s?.ads_blocked_today);
+  logger.debug('Pi-hole', 'pihole-ads-blocked-today result', { result, raw: s?.ads_blocked_today });
   return result;
 });
 
 registerValueFunction('pihole-dns-queries-today', async ({ baseUrl, token, apiPath }) => {
   const s = await getSummary(baseUrl, token, apiPath);
   const result = numify(s?.dns_queries_today);
-  console.log('[Pi-hole] pihole-dns-queries-today result:', result);
+  logger.debug('Pi-hole', 'pihole-dns-queries-today result', result);
   return result;
 });
 
 registerValueFunction('pihole-ads-percentage-today', async ({ baseUrl, token, apiPath }) => {
   const s = await getSummary(baseUrl, token, apiPath);
   const result = Math.round(numify(s?.ads_percentage_today));
-  console.log('[Pi-hole] pihole-ads-percentage-today result:', result);
+  logger.debug('Pi-hole', 'pihole-ads-percentage-today result', result);
   return result;
 });
 
 registerValueFunction('pihole-domains-being-blocked', async ({ baseUrl, token, apiPath }) => {
   const s = await getSummary(baseUrl, token, apiPath);
   const result = numify(s?.domains_being_blocked);
-  console.log('[Pi-hole] pihole-domains-being-blocked result:', result);
+  logger.debug('Pi-hole', 'pihole-domains-being-blocked result', result);
   return result;
 });
 
 registerValueFunction('pihole-unique-clients', async ({ baseUrl, token, apiPath }) => {
   const s = await getSummary(baseUrl, token, apiPath);
   const result = numify(s?.unique_clients);
-  console.log('[Pi-hole] pihole-unique-clients result:', result);
+  logger.debug('Pi-hole', 'pihole-unique-clients result', result);
   return result;
 });
 
 registerValueFunction('pihole-queries-forwarded', async ({ baseUrl, token, apiPath }) => {
   const s = await getSummary(baseUrl, token, apiPath);
   const result = numify(s?.queries_forwarded);
-  console.log('[Pi-hole] pihole-queries-forwarded result:', result);
+  logger.debug('Pi-hole', 'pihole-queries-forwarded result', result);
   return result;
 });
 
 registerValueFunction('pihole-queries-cached', async ({ baseUrl, token, apiPath }) => {
   const s = await getSummary(baseUrl, token, apiPath);
   const result = numify(s?.queries_cached);
-  console.log('[Pi-hole] pihole-queries-cached result:', result);
+  logger.debug('Pi-hole', 'pihole-queries-cached result', result);
   return result;
 });
 
 registerValueFunction('pihole-status-enabled', async ({ baseUrl, token, apiPath }) => {
-  console.log('[Pi-hole] pihole-status-enabled called with:', { baseUrl, token: token ? '***' : undefined, apiPath });
+  logger.debug('Pi-hole', 'pihole-status-enabled called', { baseUrl, token: token ? '***' : undefined, apiPath });
   // Prefer summary.status to avoid another call
   const s = await getSummary(baseUrl, token, apiPath);
   if (s && typeof s.status === 'string') {
     const result = /enabled/i.test(s.status) ? 'Enabled' : 'Disabled';
-    console.log('[Pi-hole] pihole-status-enabled result from summary:', result);
+    logger.debug('Pi-hole', 'pihole-status-enabled result from summary', result);
     return result;
   }
   const val = await getStatus(baseUrl, token, apiPath);
   const result = val === 1 ? 'Enabled' : 'Disabled';
-  console.log('[Pi-hole] pihole-status-enabled result from status:', result);
+  logger.debug('Pi-hole', 'pihole-status-enabled result from status', result);
   return result;
 });
 
