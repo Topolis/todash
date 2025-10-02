@@ -6,6 +6,17 @@ grid:
   columns: 12
   gap: 3
 
+wallpaper:
+  type: nebula
+  props:
+    colors:
+      - rgba(80, 120, 200, 0.20)
+      - rgba(150, 80, 180, 0.18)
+      - rgba(60, 140, 140, 0.18)
+      - rgba(180, 120, 80, 0.12)
+    speed: 50
+    opacity: 0.9
+
 panels:
 
   - panelType: single

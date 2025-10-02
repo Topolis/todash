@@ -44,15 +44,25 @@ export interface WidgetConfig {
 export interface DashboardSettings {
   // Date format string (e.g., "DD.MM.YYYY HH:mm")
   dateFormat?: string;
-  
+
   // Default location for weather widgets
   defaultLocation?: {
     latitude: number;
     longitude: number;
   };
-  
+
   // Additional settings
   [key: string]: any;
+}
+
+/**
+ * Dashboard theme configuration
+ */
+export interface DashboardTheme {
+  panel?: {
+    opacity?: number;
+    background?: string;
+  };
 }
 
 /**
@@ -70,6 +80,15 @@ export interface DashboardConfig {
 
   // Dashboard-wide settings
   settings?: DashboardSettings;
+
+  // Theme configuration
+  theme?: DashboardTheme;
+
+  // Wallpaper configuration
+  wallpaper?: {
+    type: string;
+    props?: any;
+  };
 }
 
 /**
