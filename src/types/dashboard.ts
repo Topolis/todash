@@ -81,6 +81,9 @@ export interface DashboardConfig {
   // Dashboard name/identifier (deprecated, use title)
   name?: string;
 
+  // Whether this dashboard is enabled (shows in selector)
+  enabled?: boolean;
+
   // Grid layout configuration
   grid?: GridConfig;
 
@@ -106,6 +109,7 @@ export interface DashboardConfig {
 export interface DashboardListItem {
   filename: string;
   title?: string;
+  enabled?: boolean;
 }
 
 /**

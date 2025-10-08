@@ -56,7 +56,7 @@ function loadDashboard(name: string): DashboardConfig {
 
 /**
  * GET /api/dashboards
- * List all available dashboards with their titles
+ * List all available dashboards with their titles (only enabled ones)
  */
 router.get('/dashboards', (_req: Request, res: Response) => {
   try {
@@ -64,22 +64,26 @@ router.get('/dashboards', (_req: Request, res: Response) => {
       .filter(f => f.endsWith('.yaml') || f.endsWith('.yml') || f.endsWith('.json'))
       .map(f => f.replace(/\.(yaml|yml|json)$/i, ''));
 
-    // Load each dashboard to get its title
-    const dashboards = files.map(filename => {
-      try {
-        const config = loadDashboard(filename);
-        return {
-          filename,
-          title: config.title || config.name || filename,
-        };
-      } catch (e) {
-        // If we can't load the dashboard, just return the filename
-        return {
-          filename,
-          title: filename,
-        };
-      }
-    });
+    // Load each dashboard to get its title and enabled status
+    const dashboards = files
+      .map(filename => {
+        try {
+          const config = loadDashboard(filename);
+          return {
+            filename,
+            title: config.title || config.name || filename,
+            enabled: config.enabled !== false, // Default to true if not specified
+          };
+        } catch (e) {
+          // If we can't load the dashboard, include it but mark as enabled
+          return {
+            filename,
+            title: filename,
+            enabled: true,
+          };
+        }
+      })
+      .filter(dash => dash.enabled); // Only return enabled dashboards
 
     res.json({ dashboards });
   } catch (e) {
