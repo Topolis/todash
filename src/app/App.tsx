@@ -16,6 +16,7 @@ import {
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import LockIcon from '@mui/icons-material/Lock';
 import BugReportIcon from '@mui/icons-material/BugReport';
+import SettingsRemoteIcon from '@mui/icons-material/SettingsRemote';
 import DashboardGrid from './components/DashboardGrid';
 import PanelRenderer from './components/PanelRenderer';
 import SaveLayoutBar from './components/SaveLayoutBar';
@@ -151,6 +152,16 @@ export default function App() {
               aria-label="view-logs"
             >
               <BugReportIcon />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="Z-Wave Management">
+            <IconButton
+              onClick={() => window.location.href = '/zwave/admin'}
+              color="default"
+              aria-label="zwave-admin"
+            >
+              <SettingsRemoteIcon />
             </IconButton>
           </Tooltip>
 
