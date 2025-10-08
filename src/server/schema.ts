@@ -8,6 +8,7 @@ export const dashboardSchema = {
   additionalProperties: true,
   properties: {
     title: { type: 'string' },
+    enabled: { type: 'boolean' },
     settings: {
       type: 'object',
       additionalProperties: true,

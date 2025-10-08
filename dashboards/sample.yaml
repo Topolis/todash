@@ -1,4 +1,5 @@
 title: Sample Dashboard
+enabled: false
 settings:
   dateFormat: 'YYYY-MM-DD HH:mm'
 
