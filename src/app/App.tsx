@@ -40,7 +40,7 @@ const theme = createTheme({
 export default function App() {
   const [dashboard, setDashboard] = useState<DashboardConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [available, setAvailable] = useState<string[]>([]);
+  const [available, setAvailable] = useState<Array<{ filename: string; title?: string }>>([]);
   const [edit, setEdit] = useState(false);
   const [layout, setLayout] = useState<PanelConfig[] | null>(null);
   const [name, setName] = useState('sample');
@@ -134,7 +134,7 @@ export default function App() {
       <WallpaperRenderer config={dashboard?.wallpaper} settings={dashboard?.settings} />
 
       <Container maxWidth="xl" sx={{ py: 2, position: 'relative', zIndex: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 0 }}>
           <Tooltip title={edit ? 'Lock layout' : 'Unlock layout for drag/resize'}>
             <IconButton
               onClick={() => setEdit((e) => !e)}
@@ -142,16 +142,6 @@ export default function App() {
               aria-label="toggle-edit"
             >
               {edit ? <LockOpenIcon /> : <LockIcon />}
-            </IconButton>
-          </Tooltip>
-
-          <Tooltip title="View application logs">
-            <IconButton
-              onClick={() => setLogViewerOpen(true)}
-              color="default"
-              aria-label="view-logs"
-            >
-              <BugReportIcon />
             </IconButton>
           </Tooltip>
 
@@ -165,8 +155,18 @@ export default function App() {
             </IconButton>
           </Tooltip>
 
+          <Tooltip title="View application logs" sx={{pr: 5}}>
+            <IconButton
+              onClick={() => setLogViewerOpen(true)}
+              color="default"
+              aria-label="view-logs"
+            >
+              <BugReportIcon />
+            </IconButton>
+          </Tooltip>
+
           <Typography variant="h5" sx={{ flexGrow: 1 }}>
-            {dashboard?.name || 'Dashboard'}
+            {dashboard?.title || dashboard?.name || 'Dashboard'}
           </Typography>
           {available.length > 0 && (
             <FormControl size="small" variant="outlined" sx={{ minWidth: 200 }}>
@@ -182,9 +182,9 @@ export default function App() {
                   window.location.search = qs.toString();
                 }}
               >
-                {available.map((dashName) => (
-                  <MenuItem key={dashName} value={dashName}>
-                    {dashName}
+                {available.map((dash) => (
+                  <MenuItem key={dash.filename} value={dash.filename}>
+                    {dash.title || dash.filename}
                   </MenuItem>
                 ))}
               </Select>

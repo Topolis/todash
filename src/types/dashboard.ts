@@ -75,7 +75,10 @@ export interface DashboardTheme {
  * Complete dashboard configuration
  */
 export interface DashboardConfig {
-  // Dashboard name/identifier
+  // Dashboard title (from YAML)
+  title?: string;
+
+  // Dashboard name/identifier (deprecated, use title)
   name?: string;
 
   // Grid layout configuration
@@ -98,10 +101,18 @@ export interface DashboardConfig {
 }
 
 /**
+ * Dashboard list item
+ */
+export interface DashboardListItem {
+  filename: string;
+  title?: string;
+}
+
+/**
  * API response for dashboard list
  */
 export interface DashboardListResponse {
-  dashboards: string[];
+  dashboards: DashboardListItem[];
 }
 
 /**
