@@ -56,14 +56,32 @@ function loadDashboard(name: string): DashboardConfig {
 
 /**
  * GET /api/dashboards
- * List all available dashboards
+ * List all available dashboards with their titles
  */
 router.get('/dashboards', (_req: Request, res: Response) => {
   try {
     const files = fs.readdirSync(dashboardsDir)
       .filter(f => f.endsWith('.yaml') || f.endsWith('.yml') || f.endsWith('.json'))
       .map(f => f.replace(/\.(yaml|yml|json)$/i, ''));
-    res.json({ dashboards: files });
+
+    // Load each dashboard to get its title
+    const dashboards = files.map(filename => {
+      try {
+        const config = loadDashboard(filename);
+        return {
+          filename,
+          title: config.title || config.name || filename,
+        };
+      } catch (e) {
+        // If we can't load the dashboard, just return the filename
+        return {
+          filename,
+          title: filename,
+        };
+      }
+    });
+
+    res.json({ dashboards });
   } catch (e) {
     res.status(500).json({ error: (e as Error).message });
   }
