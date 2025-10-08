@@ -131,14 +131,29 @@ export default function ZWaveAdminPage() {
         fetch('/api/zwave/admin/controller'),
       ]);
 
-      if (!nodesRes.ok || !controllerRes.ok) {
-        throw new Error('Failed to load Z-Wave data');
+      // Try to parse JSON even if response is not ok
+      let nodesData, controllerData;
+      try {
+        nodesData = await nodesRes.json();
+      } catch (parseError) {
+        throw new Error('Failed to parse nodes response. Server may have returned HTML instead of JSON.');
       }
 
-      const nodesData = await nodesRes.json();
-      const controllerData = await controllerRes.json();
+      try {
+        controllerData = await controllerRes.json();
+      } catch (parseError) {
+        throw new Error('Failed to parse controller response. Server may have returned HTML instead of JSON.');
+      }
 
-      setNodes(nodesData.nodes);
+      // Check for API errors
+      if (nodesData.error) {
+        throw new Error(nodesData.error);
+      }
+      if (controllerData.error) {
+        throw new Error(controllerData.error);
+      }
+
+      setNodes(nodesData.nodes || []);
       setController(controllerData);
       setError(null);
     } catch (e) {
