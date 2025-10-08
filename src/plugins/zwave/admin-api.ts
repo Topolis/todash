@@ -41,7 +41,17 @@ router.get('/events', (_req: Request, res: Response) => {
  */
 router.get('/nodes', async (_req: Request, res: Response) => {
   try {
-    const driver = await getDriver();
+    let driver;
+    try {
+      driver = await getDriver();
+    } catch (driverError: any) {
+      logger.warn('ZWave Admin', 'Driver not available for /nodes request', driverError.message);
+      return res.status(503).json({
+        error: driverError.message || 'Z-Wave driver not initialized',
+        nodes: []
+      });
+    }
+
     const controller = driver.controller;
     const nodes = controller.nodes;
 
@@ -235,7 +245,16 @@ router.get('/node/:nodeId', async (req: Request, res: Response) => {
  */
 router.get('/controller', async (_req: Request, res: Response) => {
   try {
-    const driver = await getDriver();
+    let driver;
+    try {
+      driver = await getDriver();
+    } catch (driverError: any) {
+      logger.warn('ZWave Admin', 'Driver not available for /controller request', driverError.message);
+      return res.status(503).json({
+        error: driverError.message || 'Z-Wave driver not initialized'
+      });
+    }
+
     const controller = driver.controller;
 
     const info = {
