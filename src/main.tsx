@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './app/App';
+import AppRouter from './app/Router';
 
 // Note: Plugins are registered on both client and server
 // Client-side registration happens here for the widget components
@@ -19,6 +19,9 @@ import { emailPlugin } from '@plugins/email';
 import { youtubePlugin } from '@plugins/youtube';
 import { transitPlugin } from '@plugins/transit';
 import { aqiPlugin } from '@plugins/aqi';
+import { zwaveThermostatPlugin, zwaveSwitchPlugin, zwaveSensorPlugin } from '@plugins/zwave';
+import timedScriptsPlugin from '@plugins/timed-scripts';
+import { temperatureHistoryPlugin } from '@plugins/temperature-history';
 
 // Register all plugins
 registerPlugin(weatherPlugin);
@@ -33,9 +36,14 @@ registerPlugin(emailPlugin);
 registerPlugin(youtubePlugin);
 registerPlugin(transitPlugin);
 registerPlugin(aqiPlugin);
+registerPlugin(zwaveThermostatPlugin);
+registerPlugin(zwaveSwitchPlugin);
+registerPlugin(zwaveSensorPlugin);
+registerPlugin(timedScriptsPlugin);
+registerPlugin(temperatureHistoryPlugin);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
+    <AppRouter />
   </React.StrictMode>
 );

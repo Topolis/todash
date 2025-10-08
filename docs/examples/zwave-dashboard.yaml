@@ -1,0 +1,147 @@
+title: Z-Wave Smart Home Dashboard
+settings:
+  dateFormat: YYYY-MM-DD HH:mm
+theme:
+  panel:
+    background: 'linear-gradient(135deg, rgba(14, 20, 34, 0.7) 0%, rgba(11, 15, 25, 0.85) 100%)'
+grid:
+  columns: 12
+  gap: 3
+panels:
+  # Thermostat Control
+  - panelType: single
+    x: 1
+    y: 1
+    w: 4
+    h: 4
+    widget:
+      type: zwave-thermostat
+      title: Climate Control
+      props:
+        # Optional: filter by specific node IDs
+        # nodeIds: [5, 12]
+        refreshSeconds: 10
+
+  # Light Switches and Dimmers
+  - panelType: single
+    x: 5
+    y: 1
+    w: 4
+    h: 4
+    widget:
+      type: zwave-switch
+      title: Lights & Switches
+      props:
+        # Optional: filter by specific node IDs
+        # nodeIds: [3, 7, 9]
+        refreshSeconds: 10
+
+  # Sensors (Temperature, Humidity, Motion, etc.)
+  - panelType: single
+    x: 9
+    y: 1
+    w: 4
+    h: 4
+    widget:
+      type: zwave-sensor
+      title: Sensors
+      props:
+        # Optional: filter by specific node IDs
+        # nodeIds: [2, 4, 6]
+        # Optional: filter by sensor types
+        # sensorTypes: ["Air temperature", "Humidity", "Luminance"]
+        refreshSeconds: 30
+
+  # Status Widget with Z-Wave Values
+  - panelType: single
+    x: 1
+    y: 5
+    w: 3
+    h: 4
+    widget:
+      type: status
+      title: Z-Wave Status
+      props:
+        items:
+          # Thermostat temperature
+          - label: Living Room Temp
+            value:
+              zwave-thermostat-temp:
+                nodeId: 5
+            format: '%.1f°C'
+            display: text
+
+          # Switch state
+          - label: Bedroom Light
+            value:
+              zwave-switch-state:
+                nodeId: 7
+            display: text
+
+          # Battery level
+          - label: Motion Sensor Battery
+            value:
+              zwave-battery:
+                nodeId: 2
+            valueMax: 100
+            display: progress
+
+          # Another battery
+          - label: Door Sensor Battery
+            value:
+              zwave-battery:
+                nodeId: 4
+            valueMax: 100
+            display: progress
+
+  # Tabbed panel with multiple Z-Wave widgets
+  - panelType: tabbed
+    x: 4
+    y: 5
+    w: 9
+    h: 4
+    widgets:
+      # All thermostats
+      - type: zwave-thermostat
+        title: All Thermostats
+        props:
+          refreshSeconds: 15
+
+      # All switches
+      - type: zwave-switch
+        title: All Switches
+        props:
+          refreshSeconds: 15
+
+      # All sensors
+      - type: zwave-sensor
+        title: All Sensors
+        props:
+          refreshSeconds: 30
+
+  # Specific room controls
+  - panelType: single
+    x: 1
+    y: 9
+    w: 6
+    h: 3
+    widget:
+      type: zwave-switch
+      title: Living Room Lights
+      props:
+        nodeIds: [7, 8, 9]  # Only living room lights
+        refreshSeconds: 10
+
+  - panelType: single
+    x: 7
+    y: 9
+    w: 6
+    h: 3
+    widget:
+      type: zwave-sensor
+      title: Outdoor Sensors
+      props:
+        nodeIds: [10, 11]  # Only outdoor sensors
+        sensorTypes: ["Air temperature", "Humidity"]
+        refreshSeconds: 60
+

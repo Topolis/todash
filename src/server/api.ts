@@ -230,6 +230,99 @@ router.delete('/logs', (_req: Request, res: Response) => {
 });
 
 /**
+ * Z-Wave control endpoints
+ */
+
+/**
+ * POST /api/zwave/thermostat/temperature
+ * Set thermostat temperature
+ */
+router.post('/zwave/thermostat/temperature', async (req: Request, res: Response) => {
+  try {
+    const { nodeId, temperature, setpointType = 1 } = req.body;
+
+    if (typeof nodeId !== 'number' || typeof temperature !== 'number') {
+      return res.status(400).json({ error: 'nodeId and temperature are required' });
+    }
+
+    // Dynamically import to avoid loading Z-Wave on client
+    const { setThermostatTemperature } = await import('@plugins/zwave/data');
+    await setThermostatTemperature(nodeId, temperature, setpointType);
+
+    res.json({ success: true });
+  } catch (e) {
+    logger.error('API', 'Error setting thermostat temperature', e);
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+/**
+ * POST /api/zwave/thermostat/mode
+ * Set thermostat mode
+ */
+router.post('/zwave/thermostat/mode', async (req: Request, res: Response) => {
+  try {
+    const { nodeId, mode } = req.body;
+
+    if (typeof nodeId !== 'number' || typeof mode !== 'number') {
+      return res.status(400).json({ error: 'nodeId and mode are required' });
+    }
+
+    const { setThermostatMode } = await import('@plugins/zwave/data');
+    await setThermostatMode(nodeId, mode);
+
+    res.json({ success: true });
+  } catch (e) {
+    logger.error('API', 'Error setting thermostat mode', e);
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+/**
+ * POST /api/zwave/switch/state
+ * Turn switch on/off
+ */
+router.post('/zwave/switch/state', async (req: Request, res: Response) => {
+  try {
+    const { nodeId, isOn } = req.body;
+
+    if (typeof nodeId !== 'number' || typeof isOn !== 'boolean') {
+      return res.status(400).json({ error: 'nodeId and isOn are required' });
+    }
+
+    const { setSwitchState } = await import('@plugins/zwave/data');
+    await setSwitchState(nodeId, isOn);
+
+    res.json({ success: true });
+  } catch (e) {
+    logger.error('API', 'Error setting switch state', e);
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+/**
+ * POST /api/zwave/dimmer/level
+ * Set dimmer level
+ */
+router.post('/zwave/dimmer/level', async (req: Request, res: Response) => {
+  try {
+    const { nodeId, level } = req.body;
+
+    if (typeof nodeId !== 'number' || typeof level !== 'number') {
+      return res.status(400).json({ error: 'nodeId and level are required' });
+    }
+
+    const { setDimmerLevel } = await import('@plugins/zwave/data');
+    await setDimmerLevel(nodeId, level);
+
+    res.json({ success: true });
+  } catch (e) {
+    logger.error('API', 'Error setting dimmer level', e);
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+/**
  * Error handler
  */
 router.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {

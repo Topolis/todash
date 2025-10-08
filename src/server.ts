@@ -24,6 +24,22 @@ app.use(express.json());
 // API routes
 app.use('/api', apiRouter);
 
+// Z-Wave admin routes
+import('./plugins/zwave/admin-api.js').then(module => {
+  app.use('/api/zwave/admin', module.default);
+  console.log('Z-Wave admin routes registered');
+}).catch(err => {
+  console.warn('Z-Wave admin routes not available:', err.message);
+});
+
+// Timed Scripts routes
+import('./plugins/timed-scripts/api.js').then(module => {
+  app.use('/api/timed-scripts', module.default);
+  console.log('Timed Scripts routes registered');
+}).catch(err => {
+  console.warn('Timed Scripts routes not available:', err.message);
+});
+
 // Serve static frontend in production
 if (process.env.SERVE_WEB === 'true' || process.env.NODE_ENV === 'production') {
   // When running with tsx, __dirname points to src/, so we need to go up one level

@@ -7,6 +7,7 @@ export interface DashboardCardProps {
   title?: string;
   subtitle?: string;
   sx?: SxProps<Theme>;
+  contentSx?: SxProps<Theme>;
   children?: ReactNode;
   onReload?: () => void;
   actions?: ReactNode;
@@ -31,6 +32,7 @@ export default function DashboardCard({
   title,
   subtitle,
   sx,
+  contentSx,
   children,
   onReload,
   actions,
@@ -69,7 +71,7 @@ export default function DashboardCard({
           />
         )
       )}
-      <CardContent sx={{ flexGrow: 1, minHeight: 0, overflow: 'auto' }}>
+      <CardContent sx={{ flexGrow: 1, minHeight: 0, overflow: 'hidden', ...contentSx }}>
         {children}
       </CardContent>
     </StyledCard>

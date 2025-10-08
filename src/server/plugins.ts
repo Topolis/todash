@@ -14,6 +14,11 @@ import { fetchEmailData } from '@plugins/email/data';
 import { fetchYouTubeData } from '@plugins/youtube/data';
 import { fetchTransitData } from '@plugins/transit/data';
 import { fetchAQIData } from '@plugins/aqi/data';
+import { fetchZWaveThermostatData, fetchZWaveSwitchData, fetchZWaveSensorData } from '@plugins/zwave/data';
+import { fetchTimedScriptsData } from '@plugins/timed-scripts/data';
+import { fetchTemperatureHistoryData } from '@plugins/temperature-history/data';
+// Import timed-scripts commands to register them
+import '@plugins/timed-scripts/commands';
 // Import pi-hole value functions (no data provider, just value functions)
 // Using v6 API for Pi-hole v6+
 import '@plugins/pihole/data-v6';
@@ -113,6 +118,46 @@ export function registerServerPlugins() {
     widget: null as any,
     serverSide: true,
     dataProvider: fetchAQIData,
+  });
+
+  registerPlugin({
+    name: 'zwave-thermostat',
+    displayName: 'Z-Wave Thermostat',
+    widget: null as any,
+    serverSide: true,
+    dataProvider: fetchZWaveThermostatData,
+  });
+
+  registerPlugin({
+    name: 'zwave-switch',
+    displayName: 'Z-Wave Switch',
+    widget: null as any,
+    serverSide: true,
+    dataProvider: fetchZWaveSwitchData,
+  });
+
+  registerPlugin({
+    name: 'zwave-sensor',
+    displayName: 'Z-Wave Sensor',
+    widget: null as any,
+    serverSide: true,
+    dataProvider: fetchZWaveSensorData,
+  });
+
+  registerPlugin({
+    name: 'timed-scripts',
+    displayName: 'Timed Scripts',
+    widget: null as any,
+    serverSide: true,
+    dataProvider: fetchTimedScriptsData,
+  });
+
+  registerPlugin({
+    name: 'temperature-history',
+    displayName: 'Temperature History',
+    widget: null as any,
+    serverSide: true,
+    dataProvider: fetchTemperatureHistoryData,
   });
 }
 

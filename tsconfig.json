@@ -29,7 +29,8 @@
       "@app/*": ["./src/app/*"],
       "@plugins/*": ["./src/plugins/*"],
       "@server/*": ["./src/server/*"],
-      "@types/*": ["./src/types/*"]
+      "@types/*": ["./src/types/*"],
+      "@lib/*": ["./src/lib/*"]
     },
     "types": ["vite/client", "node"]
   },

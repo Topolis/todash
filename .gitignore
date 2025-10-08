@@ -12,6 +12,11 @@ dist/
 # Env
 .env
 .env.*
+secrets.json
+/cache/*
+!/cache/.gitkeep
+/var/*
+!/var/.gitkeep
 
 # IDE
 .vscode/

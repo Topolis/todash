@@ -274,18 +274,22 @@ registerPlugin(myPlugin);
 Currently implemented:
 - ✅ **weather** - Current weather from Open-Meteo API
 - ✅ **weather-forecast** - Weather forecast
+- ✅ **rss-feed** - RSS feed reader
+- ✅ **system-stats** - System CPU/memory stats
+- ✅ **project-status** - Git project information
+- ✅ **status** - Custom status values
+- ✅ **links-list** - Quick links
+- ✅ **calendar-ics** - ICS calendar events
+- ✅ **email** - Email inbox
+- ✅ **youtube-subscriptions** - YouTube feed
+- ✅ **transit-incidents** - Transit information
+- ✅ **aqi** - Air quality index
+- ✅ **zwave-thermostat** - Z-Wave thermostat control with boost
+- ✅ **zwave-switch** - Z-Wave switch/dimmer control
+- ✅ **zwave-sensor** - Z-Wave sensor monitoring
+- ✅ **temperature-history** - Temperature history graphs
 
-Coming soon (being migrated):
-- 🚧 **rss-feed** - RSS feed reader
-- 🚧 **system-stats** - System CPU/memory stats
-- 🚧 **project-status** - Git project information
-- 🚧 **status** - Custom status values
-- 🚧 **links-list** - Quick links
-- 🚧 **calendar-ics** - ICS calendar events
-- 🚧 **email** - Email inbox
-- 🚧 **youtube-subscriptions** - YouTube feed
-- 🚧 **transit-incidents** - Transit information
-- 🚧 **aqi** - Air quality index
+See [docs/](docs/) for detailed documentation on all features.
 
 ## Features
 
@@ -368,9 +372,13 @@ This is the new unified architecture. The old `server/` and `web/` directories a
 
 ## Documentation
 
-- [MIGRATION_PLAN.md](./MIGRATION_PLAN.md) - Migration strategy and progress
-- [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md) - Complete developer reference
-- [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md) - Architecture overview
+Complete documentation is available in the [docs/](docs/) directory:
+
+- [Documentation Index](docs/README.md) - Complete documentation overview
+- [Z-Wave Complete Guide](docs/ZWAVE.md) - Setup, management, and widgets
+- [Temperature History](docs/TEMPERATURE_HISTORY.md) - Temperature graphs
+- [Logging System](docs/LOGGING.md) - Debugging and log viewer
+- [Unsplash Wallpaper](docs/UNSPLASH_WALLPAPER.md) - Photo backgrounds
 
 ## License
 
@@ -378,4 +386,4 @@ MIT
 
 ## Contributing
 
-Contributions welcome! Please see [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md) for development setup.
+Contributions welcome! See the plugin development guide above and [docs/](docs/) for detailed documentation.
