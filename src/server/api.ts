@@ -156,7 +156,7 @@ router.post('/widget/status', async (req: Request, res: Response) => {
  */
 router.post('/widget/:type', async (req: Request, res: Response) => {
   const { type } = req.params;
-  const config: WidgetDataRequest = req.body || {};
+  const { config, dashboardSettings } = req.body || {};
 
   try {
     const plugin = getPlugin(type);
@@ -169,8 +169,8 @@ router.post('/widget/:type', async (req: Request, res: Response) => {
       return res.status(400).json({ error: `Widget type ${type} has no data provider` });
     }
 
-    // Execute data provider
-    const data = await plugin.dataProvider(config);
+    // Execute data provider - pass dashboardSettings if plugin needs it
+    const data = await plugin.dataProvider(config, dashboardSettings);
 
     const response: WidgetDataResponse = { data };
     res.json(response);

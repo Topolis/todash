@@ -50,7 +50,7 @@ export default function YouTubeWidget(props: PluginWidgetProps<YouTubeConfig, Yo
     <Box sx={{ height: '100%', overflow: 'auto' }}>
       <Grid container spacing={1}>
         {items.map((it) => (
-          <Grid key={it.videoId} {...({ item: true, xs: 6, sm: 4, md: 3 } as any)}>
+          <Grid key={it.videoId} size={{ xs: 6, sm: 4, md: 3 }}>
             <CardActionArea component="a" href={it.url} target="_blank" rel="noreferrer">
               {it.thumbnail && (
                 <CardMedia component="img" image={it.thumbnail} alt={it.title} sx={{ borderRadius: 1 }} />

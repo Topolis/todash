@@ -17,6 +17,10 @@ import { fetchAQIData } from '@plugins/aqi/data';
 import { fetchZWaveThermostatData, fetchZWaveSwitchData, fetchZWaveSensorData } from '@plugins/zwave/data';
 import { fetchTimedScriptsData } from '@plugins/timed-scripts/data';
 import { fetchTemperatureHistoryData } from '@plugins/temperature-history/data';
+import { fetchShellyData } from '@plugins/shelly/data';
+import { fetchHifiControlData } from '@plugins/hifi-control/data';
+// Import device types to register them
+import '@plugins/hifi-control/device-types';
 // Import timed-scripts commands to register them
 import '@plugins/timed-scripts/commands';
 // Import pi-hole value functions (no data provider, just value functions)
@@ -158,6 +162,27 @@ export function registerServerPlugins() {
     widget: null as any,
     serverSide: true,
     dataProvider: fetchTemperatureHistoryData,
+  });
+
+  [
+    { name: 'shelly-thermostats', displayName: 'Shelly Thermostats' },
+  ].forEach((entry) => {
+    registerPlugin({
+      ...entry,
+      widget: null as any,
+      serverSide: true,
+      dataProvider: fetchShellyData,
+    });
+  });
+
+  registerPlugin({
+    name: 'hifi-control',
+    displayName: 'HiFi Control',
+    widget: null as any,
+    serverSide: true,
+    dataProvider: async (config: any, dashboardSettings: any) => {
+      return await fetchHifiControlData(config, dashboardSettings);
+    },
   });
 }
 

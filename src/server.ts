@@ -43,6 +43,24 @@ async function registerAdditionalRoutes() {
   } catch (err: any) {
     console.warn('Timed Scripts routes not available:', err.message);
   }
+
+  // Shelly controller routes
+  try {
+    const shellyModule = await import('./plugins/shelly/api.js');
+    app.use('/api/shelly', shellyModule.default);
+    console.log('Shelly routes registered');
+  } catch (err: any) {
+    console.warn('Shelly routes not available:', err.message);
+  }
+
+  // HiFi Control routes
+  try {
+    const hifiControlModule = await import('./plugins/hifi-control/api.js');
+    app.use('/api/hifi-control', hifiControlModule.default);
+    console.log('HiFi Control routes registered');
+  } catch (err: any) {
+    console.warn('HiFi Control routes not available:', err.message);
+  }
 }
 
 // Register routes before serving static files

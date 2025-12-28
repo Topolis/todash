@@ -47,15 +47,15 @@ export default function TransitIncidentsWidget(props: PluginWidgetProps<TransitC
     setError(null);
     setLoading(true);
 
-    const body: any = { force: true, limit };
-    if (mvgApiUrl || apiUrl) body.mvgApiUrl = mvgApiUrl || apiUrl;
+    const config: TransitConfig = { force: true, limit };
+    if (mvgApiUrl || apiUrl) config.mvgApiUrl = mvgApiUrl || apiUrl;
 
     retryingJson<{ data: TransitData }>(
       '/api/widget/transit-incidents',
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ config }),
       },
       { retries: 1, backoffMs: 500 }
     )

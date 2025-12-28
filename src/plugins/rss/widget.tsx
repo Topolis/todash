@@ -32,16 +32,16 @@ export default function RSSWidget(props: PluginWidgetProps<RSSConfig, RSSData>) 
     setLoading(true);
     setError(null);
 
-    const body: any = { limit, force: true };
-    if (Array.isArray(urls) && urls.length) body.urls = urls;
-    else if (url) body.url = url;
+    const config: RSSConfig = { limit, force: true };
+    if (Array.isArray(urls) && urls.length) config.urls = urls;
+    else if (url) config.url = url;
 
     retryingJson<{ data: RSSData }>(
       '/api/widget/rss-feed',
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ config }),
       },
       { retries: 2, backoffMs: 500 }
     )

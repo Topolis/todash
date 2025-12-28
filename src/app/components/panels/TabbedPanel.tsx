@@ -5,6 +5,7 @@ import DashboardCard from '../DashboardCard';
 import BasePanel, { BasePanelProps } from './BasePanel';
 import { getPlugin } from '@plugins/index';
 import type { TabbedPanelConfig, WidgetConfig } from '@types/panel';
+import { useDashboardSettings } from '../DashboardSettingsContext';
 
 /**
  * Props for TabbedPanel component
@@ -30,6 +31,7 @@ export default function TabbedPanel({
   const [refreshSignals, setRefreshSignals] = useState<number[]>(
     widgets.map(() => 0)
   );
+  const dashboardSettings = useDashboardSettings();
 
   // Generate unique widget IDs
   const wids = useMemo(
@@ -132,6 +134,7 @@ export default function TabbedPanel({
                 {...props}
                 wid={wids[index]}
                 refreshSignal={refreshSignals[index]}
+                dashboardSettings={dashboardSettings}
                 onChangePropsPersist={
                   onChangePropsPersist
                     ? (updater: any) => onChangePropsPersist(index, updater)

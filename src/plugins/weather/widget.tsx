@@ -72,7 +72,7 @@ function BarChartMui({ xLabels = [], data = [], color = '#d8b11e', height = 140 
  * Combined Weather widget with current conditions and forecast
  */
 export default function WeatherWidget(props: PluginWidgetProps<WeatherConfig, WeatherData>) {
-  const { refreshSignal, latitude, longitude, ...rest } = props;
+  const { refreshSignal, latitude, longitude } = props;
   const settings = useDashboardSettings();
   const dateFmt = settings?.dateFormat;
 
@@ -82,9 +82,9 @@ export default function WeatherWidget(props: PluginWidgetProps<WeatherConfig, We
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState(2);
 
-  // Get latitude/longitude from props or config
-  const lat = latitude ?? rest.config?.latitude ?? settings?.defaultLocation?.latitude;
-  const lon = longitude ?? rest.config?.longitude ?? settings?.defaultLocation?.longitude;
+  // Get latitude/longitude from props or settings
+  const lat = latitude ?? settings?.defaultLocation?.latitude;
+  const lon = longitude ?? settings?.defaultLocation?.longitude;
 
   useEffect(() => {
     let active = true;
@@ -102,12 +102,12 @@ export default function WeatherWidget(props: PluginWidgetProps<WeatherConfig, We
       fetch('/api/widget/weather', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ latitude: lat, longitude: lon, force: true }),
+        body: JSON.stringify({ config: { latitude: lat, longitude: lon, force: true } }),
       }).then(res => res.json()),
       fetch('/api/widget/weather-forecast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ latitude: lat, longitude: lon, force: true }),
+        body: JSON.stringify({ config: { latitude: lat, longitude: lon, force: true } }),
       }).then(res => res.json())
     ])
       .then(([c, f]) => {
@@ -171,7 +171,7 @@ export default function WeatherWidget(props: PluginWidgetProps<WeatherConfig, We
     <Stack spacing={1} sx={{ height: '100%' }}>
       {/* Header area */}
       <Grid container spacing={1} alignItems="flex-start">
-        <Grid item xs={12} md={7}>
+        <Grid size={{ xs: 12, md: 7 }}>
           <Stack spacing={0.25}>
             <Stack direction="row" spacing={1} alignItems="center">
               <Typography variant="h3" component="div">
@@ -184,7 +184,7 @@ export default function WeatherWidget(props: PluginWidgetProps<WeatherConfig, We
             <Typography variant="body2">Wind: {typeof curr?.wind_speed_10m === 'number' ? `${curr.wind_speed_10m} km/h` : '—'}</Typography>
           </Stack>
         </Grid>
-        <Grid item xs={12} md={5} sx={{ mb: 2 }}>
+        <Grid size={{ xs: 12, md: 5 }} sx={{ mb: 2 }}>
           <Stack alignItems={{ xs: 'flex-start', md: 'flex-end' }}>
             <Typography variant="h6">Weather</Typography>
             <Typography variant="body2">{curr?.time ? formatDate(curr.time, dateFmt) : ''}</Typography>

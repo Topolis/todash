@@ -22,6 +22,8 @@ import { aqiPlugin } from '@plugins/aqi';
 import { zwaveThermostatPlugin, zwaveSwitchPlugin, zwaveSensorPlugin } from '@plugins/zwave';
 import timedScriptsPlugin from '@plugins/timed-scripts';
 import { temperatureHistoryPlugin } from '@plugins/temperature-history';
+import { shellyPlugins } from '@plugins/shelly';
+import { hifiControlPlugin } from '@plugins/hifi-control';
 
 // Register all plugins
 registerPlugin(weatherPlugin);
@@ -41,6 +43,8 @@ registerPlugin(zwaveSwitchPlugin);
 registerPlugin(zwaveSensorPlugin);
 registerPlugin(timedScriptsPlugin);
 registerPlugin(temperatureHistoryPlugin);
+registerPlugin(hifiControlPlugin);
+shellyPlugins.forEach(registerPlugin);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

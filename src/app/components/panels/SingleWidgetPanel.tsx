@@ -6,6 +6,7 @@ import LockOpenIcon from '@mui/icons-material/LockOpen';
 import DashboardCard from '../DashboardCard';
 import BasePanel, { BasePanelProps } from './BasePanel';
 import { getPlugin } from '@plugins/index';
+import { useDashboardSettings } from '../DashboardSettingsContext';
 import type { SinglePanelConfig } from '@types/panel';
 
 /**
@@ -32,6 +33,7 @@ export default function SingleWidgetPanel({
   const [refreshSignal, setRefreshSignal] = useState(0);
   const wid = useMemo(() => `widget-${Math.random().toString(36).slice(2)}-${Date.now()}`, []);
   const [linksLocked, setLinksLocked] = useState(true);
+  const dashboardSettings = useDashboardSettings();
 
   // Get plugin from registry
   const plugin = getPlugin(type);
@@ -93,6 +95,7 @@ export default function SingleWidgetPanel({
           wid={wid}
           refreshSignal={refreshSignal}
           onChangePropsPersist={onChangePropsPersist}
+          dashboardSettings={dashboardSettings}
         />
       </DashboardCard>
     </BasePanel>
