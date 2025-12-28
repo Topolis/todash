@@ -49,7 +49,7 @@ export function useShellyData(options: UseShellyDataOptions): UseShellyDataResul
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestConfig),
+            body: JSON.stringify({ config: requestConfig }),
           }
         );
         if (!mountedRef.current) {

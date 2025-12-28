@@ -79,8 +79,8 @@ export interface ShellyWidgetData {
   authError: string | null;
 }
 
-const NUMERIC_FIELDS = ['target_t', 'target', 'targetTemperature', 'targetTemp'];
-const CURRENT_FIELDS = ['current_t', 'current', 'currentTemperature', 'temperature'];
+const NUMERIC_FIELDS = ['target_C', 'target_t', 'target', 'targetTemperature', 'targetTemp'];
+const CURRENT_FIELDS = ['current_C', 'current_t', 'current', 'currentTemperature', 'temperature'];
 const BATTERY_FIELDS = ['battery', 'battery_percent', 'percent'];
 const VALVE_FIELDS = ['position', 'pos', 'value'];
 const MODE_FIELDS = ['mode', 'thermostat_mode'];
@@ -186,13 +186,13 @@ function parseThermostatStatus(id: string, baseLabel: string | undefined, payloa
   if (root?.valve && typeof root.valve === 'object') {
     valvePosition = extractFromAny(root.valve, VALVE_FIELDS, coerceNumber);
   }
-  valvePosition = valvePosition ?? coerceNumber(root?.valve_position);
+  valvePosition = valvePosition ?? coerceNumber(root?.pos) ?? coerceNumber(root?.valve_position);
 
   const mode = extractFromAny(thermostat, MODE_FIELDS, value => (typeof value === 'string' ? value : undefined)) ?? (typeof root?.mode === 'string' ? root.mode : undefined);
   const status = extractFromAny(root, STATUS_FIELDS, value => (typeof value === 'string' ? value : undefined));
   const humidity = coerceNumber(root?.humidity ?? thermostat?.humidity);
-  const online = coerceBoolean(root?.online ?? thermostat?.online);
-  const lastUpdateTs = coerceNumber(root?.ts ?? root?.timestamp ?? root?._updated);
+  const online = coerceBoolean(root?.online ?? thermostat?.online ?? root?.paired);
+  const lastUpdateTs = coerceNumber(root?.last_updated_ts ?? root?.ts ?? root?.timestamp ?? root?._updated);
 
   return {
     id,
@@ -353,19 +353,21 @@ export const fetchShellyData = async (config: ShellyWidgetConfig): Promise<Shell
   const thermostatStates = await Promise.all(
     thermostatConfigs.map(async (thermo) => {
       try {
-        const status = await callShelly('Thermostat.GetStatus', { id: thermo.id });
+        const status = await callShelly('BluTrv.GetStatus', { id: thermo.id });
         return parseThermostatStatus(thermo.id, thermo.label, status);
       } catch (error) {
         if (error instanceof ShellyRpcError && (error.status === 401 || error.status === 403)) {
           authError = 'Shelly controller rejected the configured credentials. Update SHELLY_USERNAME and SHELLY_PASSWORD secrets.';
           logger.warn('Shelly', `Unauthorized while fetching thermostat ${thermo.id}`);
+        } else if (error instanceof ShellyRpcError && error.code === 404) {
+          logger.debug('Shelly', `BluTrv.GetStatus not supported - thermostat ${thermo.id} status unavailable`);
         } else {
           logger.error('Shelly', `Failed to fetch thermostat ${thermo.id}`, error);
         }
         return {
           id: thermo.id,
           label: thermo.label ?? thermo.id,
-          status: 'error',
+          status: 'unavailable',
           rawStatus: null,
         } satisfies ShellyThermostatState;
       }
