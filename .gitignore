@@ -21,6 +21,8 @@ secrets.json
 # IDE
 .vscode/
 .DS_Store
+.github/
+.copilot-journal/
 
 
 
