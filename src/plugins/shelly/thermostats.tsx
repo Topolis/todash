@@ -381,11 +381,6 @@ export default function ShellyThermostatsWidget(
                   {thermo.mode}
                 </Typography>
               )}
-              {thermo.valvePosition !== undefined && (
-                <Typography variant="caption" color="text.secondary">
-                  Valve: {thermo.valvePosition}%
-                </Typography>
-              )}
             </Stack>
 
             {/* Mode chips */}

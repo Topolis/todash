@@ -117,37 +117,48 @@ export default function LinksWidget(props: PluginWidgetProps<LinksConfig>) {
           )}
 
           {layout === 'square' ? (
-            <Grid container spacing={squareGap} alignItems="stretch">
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: `repeat(auto-fit, minmax(${squareMin}px, ${squareMin}px))`,
+                gap: squareGap,
+              }}
+            >
               {group.items.map((link, i) => (
-                <Grid key={i} size={{ xs: 3, sm: 2, md: 1, lg: 1, xl: 1 }} sx={{ display: 'flex' }}>
-                  <SquareLink
-                    link={link}
-                    allowEdit={allowEdit}
-                    locked={locked}
-                    onEdit={() => {
-                      setEditing({ ...link, index: i, groupIndex: gi });
-                      setOpen(true);
-                    }}
-                    onDelete={() => remove(i, gi)}
-                    min={squareMin}
-                  />
-                </Grid>
+                <SquareLink
+                  key={i}
+                  link={link}
+                  allowEdit={allowEdit}
+                  locked={locked}
+                  onEdit={() => {
+                    setEditing({ ...link, index: i, groupIndex: gi });
+                    setOpen(true);
+                  }}
+                  onDelete={() => remove(i, gi)}
+                  min={squareMin}
+                />
               ))}
-            </Grid>
+            </Box>
           ) : (
-            <Grid container spacing={1}>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: 1,
+              }}
+            >
               {group.items.map((link, i) => (
-                <Grid key={i} size={{ xs: 2, sm: 2, md: 2, lg: 2 }}>
-                  <Stack
-                    component="a"
-                    href={link.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    direction="row"
-                    spacing={1}
-                    alignItems="center"
-                    sx={{
-                      p: 1,
+                <Stack
+                  key={i}
+                  component="a"
+                  href={link.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  sx={{
+                    p: 1,
                       bgcolor: 'rgba(255,255,255,0.04)',
                       borderRadius: 1,
                       textDecoration: 'none',
@@ -192,9 +203,8 @@ export default function LinksWidget(props: PluginWidgetProps<LinksConfig>) {
                       </Stack>
                     )}
                   </Stack>
-                </Grid>
               ))}
-            </Grid>
+            </Box>
           )}
         </Box>
       ))}
