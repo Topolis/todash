@@ -21,6 +21,16 @@ import SquareLink from './SquareLink';
 import type { PluginWidgetProps } from '@types/plugin';
 import type { LinksConfig, LinkItem, LinkGroup } from './data';
 
+interface DragSource {
+  groupIndex: number;
+  index: number;
+}
+
+interface DropTarget {
+  groupIndex: number;
+  index: number;
+}
+
 export default function LinksWidget(props: PluginWidgetProps<LinksConfig>) {
   const {
     items = [],
@@ -44,6 +54,8 @@ export default function LinksWidget(props: PluginWidgetProps<LinksConfig>) {
   const [editing, setEditing] = useState<(LinkItem & { index?: number; groupIndex?: number }) | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [locked, setLocked] = useState(true);
+  const [dragSource, setDragSource] = useState<DragSource | null>(null);
+  const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
   const defaultGroupIndex = 0;
 
   useEffect(() => {
@@ -106,6 +118,39 @@ export default function LinksWidget(props: PluginWidgetProps<LinksConfig>) {
     });
   }
 
+  function moveItem(source: DragSource, target: DropTarget) {
+    setStateGroups((prev) => {
+      const copy = prev.map((g) => ({ ...g, items: [...g.items] }));
+      const sourceGroup = copy[source.groupIndex];
+      const targetGroup = copy[target.groupIndex];
+      if (!sourceGroup || !targetGroup) return prev;
+      if (!sourceGroup.items[source.index]) return prev;
+
+      const [moved] = sourceGroup.items.splice(source.index, 1);
+      const sameGroup = source.groupIndex === target.groupIndex;
+      const insertIndex = sameGroup && source.index < target.index
+        ? Math.max(0, target.index - 1)
+        : target.index;
+      const boundedIndex = Math.max(0, Math.min(insertIndex, targetGroup.items.length));
+      targetGroup.items.splice(boundedIndex, 0, moved);
+
+      persist(copy);
+      return copy;
+    });
+  }
+
+  function handleDrop(target: DropTarget) {
+    if (!dragSource) return;
+    moveItem(dragSource, target);
+    setDragSource(null);
+    setDropTarget(null);
+  }
+
+  function handleDragEnd() {
+    setDragSource(null);
+    setDropTarget(null);
+  }
+
   return (
     <Box sx={{ height: '100%', overflow: 'auto' }}>
       {stateGroups.map((group, gi) => (
@@ -123,20 +168,59 @@ export default function LinksWidget(props: PluginWidgetProps<LinksConfig>) {
                 gridTemplateColumns: `repeat(auto-fit, minmax(${squareMin}px, ${squareMin}px))`,
                 gap: squareGap,
               }}
+              onDragOver={(e) => {
+                if (!allowEdit || locked || !dragSource) return;
+                e.preventDefault();
+                setDropTarget({ groupIndex: gi, index: group.items.length });
+              }}
+              onDrop={(e) => {
+                if (!allowEdit || locked || !dragSource) return;
+                e.preventDefault();
+                handleDrop({ groupIndex: gi, index: group.items.length });
+              }}
             >
               {group.items.map((link, i) => (
-                <SquareLink
-                  key={i}
-                  link={link}
-                  allowEdit={allowEdit}
-                  locked={locked}
-                  onEdit={() => {
-                    setEditing({ ...link, index: i, groupIndex: gi });
-                    setOpen(true);
+                <Box
+                  key={`${gi}-${i}-${link.url}`}
+                  draggable={allowEdit && !locked}
+                  onDragStart={() => {
+                    setDragSource({ groupIndex: gi, index: i });
+                    setDropTarget({ groupIndex: gi, index: i });
                   }}
-                  onDelete={() => remove(i, gi)}
-                  min={squareMin}
-                />
+                  onDragOver={(e) => {
+                    if (!allowEdit || locked || !dragSource) return;
+                    e.preventDefault();
+                    setDropTarget({ groupIndex: gi, index: i });
+                  }}
+                  onDrop={(e) => {
+                    if (!allowEdit || locked || !dragSource) return;
+                    e.preventDefault();
+                    handleDrop({ groupIndex: gi, index: i });
+                  }}
+                  onDragEnd={handleDragEnd}
+                  sx={{
+                    opacity: dragSource?.groupIndex === gi && dragSource?.index === i ? 0.45 : 1,
+                    outline:
+                      dropTarget?.groupIndex === gi && dropTarget?.index === i
+                        ? '1px dashed rgba(144, 202, 249, 0.7)'
+                        : 'none',
+                    outlineOffset: 1,
+                    borderRadius: 1.2,
+                    cursor: allowEdit && !locked ? 'grab' : 'default',
+                  }}
+                >
+                  <SquareLink
+                    link={link}
+                    allowEdit={allowEdit}
+                    locked={locked}
+                    onEdit={() => {
+                      setEditing({ ...link, index: i, groupIndex: gi });
+                      setOpen(true);
+                    }}
+                    onDelete={() => remove(i, gi)}
+                    min={squareMin}
+                  />
+                </Box>
               ))}
             </Box>
           ) : (
@@ -146,10 +230,20 @@ export default function LinksWidget(props: PluginWidgetProps<LinksConfig>) {
                 gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                 gap: 1,
               }}
+              onDragOver={(e) => {
+                if (!allowEdit || locked || !dragSource) return;
+                e.preventDefault();
+                setDropTarget({ groupIndex: gi, index: group.items.length });
+              }}
+              onDrop={(e) => {
+                if (!allowEdit || locked || !dragSource) return;
+                e.preventDefault();
+                handleDrop({ groupIndex: gi, index: group.items.length });
+              }}
             >
               {group.items.map((link, i) => (
                 <Stack
-                  key={i}
+                  key={`${gi}-${i}-${link.url}`}
                   component="a"
                   href={link.url}
                   target="_blank"
@@ -157,15 +251,38 @@ export default function LinksWidget(props: PluginWidgetProps<LinksConfig>) {
                   direction="row"
                   spacing={1}
                   alignItems="center"
+                  draggable={allowEdit && !locked}
+                  onDragStart={() => {
+                    setDragSource({ groupIndex: gi, index: i });
+                    setDropTarget({ groupIndex: gi, index: i });
+                  }}
+                  onDragOver={(e) => {
+                    if (!allowEdit || locked || !dragSource) return;
+                    e.preventDefault();
+                    setDropTarget({ groupIndex: gi, index: i });
+                  }}
+                  onDrop={(e) => {
+                    if (!allowEdit || locked || !dragSource) return;
+                    e.preventDefault();
+                    handleDrop({ groupIndex: gi, index: i });
+                  }}
+                  onDragEnd={handleDragEnd}
                   sx={{
                     p: 1,
-                      bgcolor: 'rgba(255,255,255,0.04)',
-                      borderRadius: 1,
-                      textDecoration: 'none',
-                      color: 'inherit',
-                      transition: 'background-color 120ms ease',
-                      '&:hover': { bgcolor: 'rgba(144,202,249,0.12)' },
-                    }}
+                    bgcolor: 'rgba(255,255,255,0.04)',
+                    borderRadius: 1,
+                    textDecoration: 'none',
+                    color: 'inherit',
+                    transition: 'background-color 120ms ease',
+                    '&:hover': { bgcolor: 'rgba(144,202,249,0.12)' },
+                    opacity: dragSource?.groupIndex === gi && dragSource?.index === i ? 0.45 : 1,
+                    outline:
+                      dropTarget?.groupIndex === gi && dropTarget?.index === i
+                        ? '1px dashed rgba(144, 202, 249, 0.7)'
+                        : 'none',
+                    outlineOffset: 1,
+                    cursor: allowEdit && !locked ? 'grab' : 'default',
+                  }}
                   >
                     <Avatar src={link.icon} alt={link.label} sx={{ width: 28, height: 28 }}>
                       {link.label?.[0]?.toUpperCase()}
