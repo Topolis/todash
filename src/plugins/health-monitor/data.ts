@@ -232,8 +232,13 @@ export async function fetchHealthMonitorData(
     services.map(service => checkServiceWithInterval(service, timeout, retries))
   );
 
+  const latestServiceCheckMs = results
+    .map((service) => Date.parse(service.lastCheck))
+    .filter((value) => Number.isFinite(value))
+    .reduce((max, value) => Math.max(max, value), 0);
+
   return {
     services: results,
-    timestamp: new Date().toISOString(),
+    timestamp: new Date(latestServiceCheckMs || Date.now()).toISOString(),
   };
 }

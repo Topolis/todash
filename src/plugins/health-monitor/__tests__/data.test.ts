@@ -47,6 +47,7 @@ describe('fetchHealthMonitorData checkInterval behavior', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(second.services[0].lastCheck).toBe(first.services[0].lastCheck);
+    expect(second.timestamp).toBe(first.timestamp);
   });
 
   it('runs a new health check after checkInterval elapses', async () => {
