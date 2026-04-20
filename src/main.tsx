@@ -24,6 +24,7 @@ import timedScriptsPlugin from '@plugins/timed-scripts';
 import { temperatureHistoryPlugin } from '@plugins/temperature-history';
 import { shellyPlugins } from '@plugins/shelly';
 import { hifiControlPlugin } from '@plugins/hifi-control';
+import { healthMonitorPlugin } from '@plugins/health-monitor';
 
 // Register all plugins
 registerPlugin(weatherPlugin);
@@ -44,6 +45,7 @@ registerPlugin(zwaveSensorPlugin);
 registerPlugin(timedScriptsPlugin);
 registerPlugin(temperatureHistoryPlugin);
 registerPlugin(hifiControlPlugin);
+registerPlugin(healthMonitorPlugin);
 shellyPlugins.forEach(registerPlugin);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

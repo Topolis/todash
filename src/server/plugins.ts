@@ -19,6 +19,7 @@ import { fetchTimedScriptsData } from '@plugins/timed-scripts/data';
 import { fetchTemperatureHistoryData } from '@plugins/temperature-history/data';
 import { fetchShellyData } from '@plugins/shelly/data';
 import { fetchHifiControlData } from '@plugins/hifi-control/data';
+import { fetchHealthMonitorData } from '@plugins/health-monitor/data';
 // Import device types to register them
 import '@plugins/hifi-control/device-types';
 // Import timed-scripts commands to register them
@@ -183,6 +184,14 @@ export function registerServerPlugins() {
     dataProvider: async (config: any, dashboardSettings: any) => {
       return await fetchHifiControlData(config, dashboardSettings);
     },
+  });
+
+  registerPlugin({
+    name: 'health-monitor',
+    displayName: 'Health Monitor',
+    widget: null as any,
+    serverSide: true,
+    dataProvider: fetchHealthMonitorData,
   });
 }
 
