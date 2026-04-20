@@ -9,7 +9,7 @@ import { logger } from '../../lib/logger';
 export interface HealthService {
   title: string;
   url: string;
-  checkInterval?: number; // seconds between checks (used for display/info)
+  checkInterval?: number; // seconds between checks
   expectedStatus?: number; // expected HTTP status code (default: 200-299 range)
   method?: 'HEAD' | 'GET' | 'POST'; // HTTP method (default: HEAD)
   bodyRegex?: string | string[]; // regex pattern(s) to match in response body - all must match
@@ -46,6 +46,35 @@ export interface HealthCheckResult {
 export interface HealthMonitorData {
   services: HealthCheckResult[];
   timestamp: string;
+}
+
+interface CachedHealthCheck {
+  result: HealthCheckResult;
+  checkedAtMs: number;
+}
+
+const serviceCheckCache = new Map<string, CachedHealthCheck>();
+const serviceCheckInFlight = new Map<string, Promise<HealthCheckResult>>();
+
+function getServiceCacheKey(service: HealthService, globalTimeout: number, retries: number): string {
+  return JSON.stringify({
+    title: service.title,
+    url: service.url,
+    method: service.method || 'HEAD',
+    expectedStatus: service.expectedStatus,
+    bodyRegex: service.bodyRegex,
+    timeout: service.timeout || globalTimeout,
+    checkInterval: service.checkInterval,
+    retries,
+  });
+}
+
+function getIntervalMs(service: HealthService): number {
+  const intervalSeconds = Number(service.checkInterval);
+  if (!Number.isFinite(intervalSeconds) || intervalSeconds <= 0) {
+    return 0;
+  }
+  return Math.floor(intervalSeconds * 1000);
 }
 
 /**
@@ -153,6 +182,43 @@ async function checkService(
   };
 }
 
+async function checkServiceWithInterval(
+  service: HealthService,
+  globalTimeout: number,
+  retries: number
+): Promise<HealthCheckResult> {
+  const intervalMs = getIntervalMs(service);
+  const cacheKey = getServiceCacheKey(service, globalTimeout, retries);
+  const now = Date.now();
+
+  if (intervalMs > 0) {
+    const cached = serviceCheckCache.get(cacheKey);
+    if (cached && now - cached.checkedAtMs < intervalMs) {
+      return cached.result;
+    }
+  }
+
+  const inFlight = serviceCheckInFlight.get(cacheKey);
+  if (inFlight) {
+    return inFlight;
+  }
+
+  const nextCheck = checkService(service, globalTimeout, retries)
+    .then((result) => {
+      serviceCheckCache.set(cacheKey, {
+        result,
+        checkedAtMs: Date.parse(result.lastCheck) || Date.now(),
+      });
+      return result;
+    })
+    .finally(() => {
+      serviceCheckInFlight.delete(cacheKey);
+    });
+
+  serviceCheckInFlight.set(cacheKey, nextCheck);
+  return nextCheck;
+}
+
 /**
  * Fetch health monitor data
  */
@@ -163,7 +229,7 @@ export async function fetchHealthMonitorData(
 
   // Perform all health checks in parallel
   const results = await Promise.all(
-    services.map(service => checkService(service, timeout, retries))
+    services.map(service => checkServiceWithInterval(service, timeout, retries))
   );
 
   return {
