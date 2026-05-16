@@ -18,25 +18,31 @@ echo "Working directory: $SCRIPT_DIR"
 echo ""
 
 # Step 1: Git pull
-echo "[1/4] Pulling latest changes from git..."
+echo "[1/5] Pulling latest changes from git..."
 git pull
 echo "✓ Git pull complete"
 echo ""
 
-# Step 2: Build
-echo "[2/4] Building application..."
+# Step 2: Install dependencies
+echo "[2/5] Installing dependencies..."
+npm ci --omit=dev
+echo "✓ Dependencies installed"
+echo ""
+
+# Step 3: Build
+echo "[3/5] Building application..."
 npm run build
 echo "✓ Build complete"
 echo ""
 
-# Step 3: Fix permissions
-echo "[3/4] Fixing file permissions..."
+# Step 4: Fix permissions
+echo "[4/5] Fixing file permissions..."
 sudo chown -R todash:users .
 echo "✓ Permissions fixed"
 echo ""
 
-# Step 4: Restart service
-echo "[4/4] Restarting todash service..."
+# Step 5: Restart service
+echo "[5/5] Restarting todash service..."
 sudo systemctl restart todash
 echo "✓ Service restarted"
 echo ""
