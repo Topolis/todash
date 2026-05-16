@@ -20,6 +20,9 @@ Complete documentation for the Todash dashboard system.
 ### Logging & Debugging
 - [Logging System](LOGGING.md) - Built-in log viewer and debugging
 
+### Notifications
+- [Notification System](#notification-system) - User-facing messages from services and widgets
+
 ### Wallpapers
 - [Unsplash Integration](UNSPLASH_WALLPAPER.md) - Photo wallpaper setup and configuration
 
@@ -55,6 +58,69 @@ Complete documentation for the Todash dashboard system.
 - Main [README](../README.md) - Architecture overview
 - [Logging System](LOGGING.md) - Logging architecture
 - [Z-Wave Guide](ZWAVE.md) - Z-Wave data storage and architecture
+
+---
+
+## Notification System
+
+Todash has a built-in notification system for surfacing messages to the user from any server-side service, widget, or the app itself.
+
+### UI
+
+A bell icon in the top-right of the header shows a red badge with the number of unread notifications. Clicking it opens a dialog that lists all notifications with:
+
+- A coloured severity icon (debug / info / warn / error)
+- The origin label and timestamp
+- A rendered Markdown text block
+- A ✕ button to dismiss individually, and a "Dismiss all" button
+
+The bell polls for new notifications every 30 seconds automatically.
+
+### Sending a notification
+
+Make a `POST` request to the notifications API from any server-side code or external service:
+
+```
+POST /api/notifications
+Content-Type: application/json
+
+{
+  "origin": "My Service",
+  "severity": "warn",
+  "message": "**Sensor offline** — no data received since 14:30. [Check device](#)."
+}
+```
+
+**Fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `origin` | string | yes | Short label identifying the sender (e.g. `"Weather"`, `"Z-Wave"`) |
+| `severity` | string | yes | One of `debug`, `info`, `warn`, `error` |
+| `message` | string | yes | Markdown text shown to the user |
+
+The response is `201 Created` with the created notification object including its `id` and `timestamp`.
+
+### From server-side code (TypeScript)
+
+```typescript
+import { notificationStore } from '@server/notifications';
+
+notificationStore.add('My Plugin', 'error', 'Something went **wrong**.');
+```
+
+### API reference
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/notifications` | List all active notifications |
+| `POST` | `/api/notifications` | Create a notification |
+| `DELETE` | `/api/notifications/:id` | Dismiss a single notification |
+| `DELETE` | `/api/notifications` | Dismiss all notifications |
+
+### Storage
+
+Notifications are stored in memory on the server (max 200 entries, oldest dropped first). They are cleared on server restart.
 
 ## Examples
 

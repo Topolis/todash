@@ -2,6 +2,7 @@
 // Performs HTTP health checks on configured services
 
 import { logger } from '../../lib/logger';
+import { notificationStore } from '../../server/notifications';
 
 /**
  * Service health check configuration
@@ -182,6 +183,31 @@ async function checkService(
   };
 }
 
+function notifyStatusTransition(
+  service: HealthService,
+  previousStatus: HealthCheckResult['status'] | undefined,
+  result: HealthCheckResult
+): void {
+  const isUp = result.status === 'up';
+  // previousStatus === undefined means this is the first ever check this session
+  const wasUp = previousStatus === 'up' || previousStatus === undefined;
+
+  if (!isUp && wasUp) {
+    const errorDetail = result.error ? `\n\nError: ${result.error}` : '';
+    notificationStore.add(
+      service.title,
+      'error',
+      `**${service.title}** is ${result.status}${errorDetail}\n\nURL: ${service.url}`
+    );
+  } else if (isUp && previousStatus !== undefined && !wasUp) {
+    notificationStore.add(
+      service.title,
+      'info',
+      `**${service.title}** has recovered and is back up.\n\nURL: ${service.url}`
+    );
+  }
+}
+
 async function checkServiceWithInterval(
   service: HealthService,
   globalTimeout: number,
@@ -203,12 +229,15 @@ async function checkServiceWithInterval(
     return inFlight;
   }
 
+  const previousStatus = serviceCheckCache.get(cacheKey)?.result.status;
+
   const nextCheck = checkService(service, globalTimeout, retries)
     .then((result) => {
       serviceCheckCache.set(cacheKey, {
         result,
         checkedAtMs: Date.parse(result.lastCheck) || Date.now(),
       });
+      notifyStatusTransition(service, previousStatus, result);
       return result;
     })
     .finally(() => {

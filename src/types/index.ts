@@ -2,4 +2,5 @@
 export * from './plugin';
 export * from './dashboard';
 export * from './api';
+export * from './notification';
 

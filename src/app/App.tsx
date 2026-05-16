@@ -21,6 +21,7 @@ import DashboardGrid from './components/DashboardGrid';
 import PanelRenderer from './components/PanelRenderer';
 import SaveLayoutBar from './components/SaveLayoutBar';
 import LogViewerDialog from './components/LogViewerDialog';
+import NotificationBell from './components/NotificationBell';
 import { DashboardSettingsContext } from './components/DashboardSettingsContext';
 import { DashboardThemeContext } from './components/DashboardThemeContext';
 import { WallpaperRenderer } from '../wallpapers';
@@ -168,6 +169,7 @@ export default function App() {
           <Typography variant="h5" sx={{ flexGrow: 1 }}>
             {dashboard?.title || dashboard?.name || 'Dashboard'}
           </Typography>
+          <NotificationBell />
           {available.length > 0 && (
             <FormControl size="small" variant="outlined" sx={{ minWidth: 200 }}>
               <InputLabel id="dashboard-select-label">Dashboard</InputLabel>

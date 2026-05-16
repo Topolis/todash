@@ -7,6 +7,7 @@ import { dashboardSchema } from './schema';
 import { getPlugin } from '@plugins/index';
 import { evaluateValueFunction } from './valueFunctions';
 import { logger } from '../lib/logger';
+import { notificationStore } from './notifications';
 import type { DashboardConfig } from '@types/dashboard';
 import type { WidgetDataRequest, WidgetDataResponse } from '@types/api';
 
@@ -342,6 +343,56 @@ router.post('/zwave/dimmer/level', async (req: Request, res: Response) => {
     logger.error('API', 'Error setting dimmer level', e);
     res.status(500).json({ error: (e as Error).message });
   }
+});
+
+/**
+ * GET /api/notifications
+ * List all active notifications
+ */
+router.get('/notifications', (_req: Request, res: Response) => {
+  res.json({ notifications: notificationStore.getAll() });
+});
+
+/**
+ * POST /api/notifications
+ * Add a new notification (can be called by services, widgets, or the app)
+ */
+router.post('/notifications', (req: Request, res: Response) => {
+  const { origin, severity, message } = req.body;
+
+  if (typeof origin !== 'string' || !origin.trim()) {
+    return res.status(400).json({ error: 'origin is required' });
+  }
+  if (!notificationStore.isValidSeverity(severity)) {
+    return res.status(400).json({ error: 'severity must be debug, info, warn, or error' });
+  }
+  if (typeof message !== 'string' || !message.trim()) {
+    return res.status(400).json({ error: 'message is required' });
+  }
+
+  const notification = notificationStore.add(origin.trim(), severity, message);
+  res.status(201).json({ notification });
+});
+
+/**
+ * DELETE /api/notifications
+ * Dismiss all notifications
+ */
+router.delete('/notifications', (_req: Request, res: Response) => {
+  notificationStore.dismissAll();
+  res.json({ ok: true });
+});
+
+/**
+ * DELETE /api/notifications/:id
+ * Dismiss a single notification by ID
+ */
+router.delete('/notifications/:id', (req: Request, res: Response) => {
+  const found = notificationStore.dismiss(req.params.id);
+  if (!found) {
+    return res.status(404).json({ error: 'Notification not found' });
+  }
+  res.json({ ok: true });
 });
 
 /**
