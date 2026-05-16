@@ -19,8 +19,17 @@ echo ""
 
 # Step 1: Git pull
 echo "[1/5] Pulling latest changes from git..."
+SCRIPT_BEFORE=$(md5sum "$0")
 git pull
 echo "✓ Git pull complete"
+echo ""
+
+# If this script itself changed, re-exec the new version and let it finish
+SCRIPT_AFTER=$(md5sum "$0")
+if [[ "$SCRIPT_BEFORE" != "$SCRIPT_AFTER" ]]; then
+  echo "↻ update-service.sh changed — re-running updated script..."
+  exec "$0" "$@"
+fi
 echo ""
 
 # Step 2: Install dependencies
