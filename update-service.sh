@@ -34,7 +34,7 @@ echo ""
 
 # Step 2: Install dependencies
 echo "[2/5] Installing dependencies..."
-npm ci --omit=dev
+npm ci
 echo "✓ Dependencies installed"
 echo ""
 
